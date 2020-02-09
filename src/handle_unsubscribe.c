@@ -37,6 +37,11 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 	uint8_t *reason_codes = NULL, *reason_tmp;
 	mosquitto_property *properties = NULL;
 
+	/* Jack's patch  */
+	char *tsub;
+	int tlen;
+	/* Jack's patch  */
+	
 	if(!context) return MOSQ_ERR_INVAL;
 
 	if(context->state != mosq_cs_active){
@@ -74,6 +79,10 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 
 	while(context->in_packet.pos < context->in_packet.remaining_length){
 		sub = NULL;
+		/* Jack's patch  */
+		tsub = NULL;
+		/* Jack's patch  */
+		
 		if(packet__read_string(&context->in_packet, &sub, &slen)){
 			return 1;
 		}
@@ -85,6 +94,32 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 			mosquitto__free(sub);
 			return 1;
 		}
+
+		/* Jack's patch  */
+		if (db->config->vayo_end_segment && vayo__strend(sub, db->config->vayo_end_segment)) // is vayo topic => unsubscribe without vayo 
+		{
+			char* sub_str = vayo__strndup(sub, strlen(sub) - strlen(db->config->vayo_end_segment));
+			if (!sub_str) {
+				mosquitto__free(sub);
+				return MOSQ_ERR_NOMEM;
+			}
+			mosquitto__free(sub);
+			sub = sub_str;
+		}
+		else if (!vayo__strend(sub, "/#")) // unsubscribe this and with client Id
+		{
+			tsub = vayo__topic_with_id(sub, context->id, &tlen);
+			if (!tsub) {
+				mosquitto__free(sub);
+				return MOSQ_ERR_NOMEM;
+			}
+			log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s", tsub);
+			sub__remove(db, context, tsub, db->subs, &reason);
+			log__printf(NULL, MOSQ_LOG_UNSUBSCRIBE, "%s %s", context->id, tsub);
+			mosquitto__free(tsub);
+		}
+		/* Jack's patch  */
+
 		if(mosquitto_sub_topic_check(sub)){
 			log__printf(NULL, MOSQ_LOG_INFO,
 					"Invalid unsubscription string from %s, disconnecting.",
@@ -96,6 +131,7 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 		log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s", sub);
 		rc = sub__remove(db, context, sub, db->subs, &reason);
 		log__printf(NULL, MOSQ_LOG_UNSUBSCRIBE, "%s %s", context->id, sub);
+
 		mosquitto__free(sub);
 		if(rc) return rc;
 

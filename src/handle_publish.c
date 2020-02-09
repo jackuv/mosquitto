@@ -54,6 +54,10 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	int topic_alias = -1;
 	uint8_t reason_code = 0;
 
+	/* Jack's patch */
+	char* tempTopic = NULL;
+	/* Jack's patch */
+	
 #ifdef WITH_BRIDGE
 	char *topic_temp;
 	int i;
@@ -106,6 +110,29 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 		}
 	}
 
+	/* Jack's patch */
+	if (db->config->vayo_end_segment && vayo__strend(topic, db->config->vayo_end_segment))
+	{
+		slen = strlen(topic) - strlen(db->config->vayo_end_segment);
+		tempTopic = vayo__strndup(topic, slen);
+		if (!tempTopic) {
+			mosquitto__free(topic);
+			return MOSQ_ERR_NOMEM;
+		}
+		mosquitto__free(topic);
+		topic = tempTopic;
+	} else {
+		tempTopic = vayo__topic_with_id(topic, context->id, &slen);
+		if (!tempTopic) {
+			mosquitto__free(topic);
+			return MOSQ_ERR_NOMEM;
+		}
+		mosquitto__free(topic);
+		topic = tempTopic;
+	}
+	/* Jack's patch */
+	
+	
 	/* Handle properties */
 	if(context->protocol == mosq_p_mqtt5){
 		rc = property__read_all(CMD_PUBLISH, &context->in_packet, &properties);

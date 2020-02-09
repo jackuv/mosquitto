@@ -230,6 +230,11 @@ static void config__init_reload(struct mosquitto_db *db, struct mosquitto__confi
 	config->sys_interval = 10;
 	config->upgrade_outgoing_qos = false;
 
+	/* Jack's patch */
+	mosquitto__free(config->vayo_end_segment);
+	config->vayo_end_segment = NULL;
+	/* Jack's patch */
+	
 	config__cleanup_plugins(config);
 }
 
@@ -377,6 +382,12 @@ void config__cleanup(struct mosquitto__config *config)
 		mosquitto__free(config->log_file);
 		config->log_file = NULL;
 	}
+	/* Jack's patch */
+	if(config->vayo_end_segment){
+		mosquitto__free(config->vayo_end_segment);
+		config->vayo_end_segment = NULL;
+	}
+	/* Jack's patch */
 }
 
 static void print_usage(void)
@@ -604,6 +615,11 @@ void config__copy(struct mosquitto__config *src, struct mosquitto__config *dest)
 	dest->sys_interval = src->sys_interval;
 	dest->upgrade_outgoing_qos = src->upgrade_outgoing_qos;
 
+	/* Jack's patch */
+	mosquitto__free(dest->vayo_end_segment);
+	dest->vayo_end_segment = src->vayo_end_segment;
+	/* Jack's patch */
+
 #ifdef WITH_WEBSOCKETS
 	dest->websockets_log_level = src->websockets_log_level;
 #endif
@@ -801,6 +817,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 	int lineno_ext = 0;
 
 	*lineno = 0;
+	config->vayo_end_segment = NULL;
 
 	while(fgets_extending(buf, buflen, fptr)){
 		(*lineno)++;
@@ -810,7 +827,24 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 			}
 			token = strtok_r((*buf), " ", &saveptr);
 			if(token){
-				if(!strcmp(token, "acl_file")){
+				/* Jack's patch  */
+				if(!strcmp(token, "vayo_end_segment")){
+					token = strtok_r(NULL, " ", &saveptr);
+					if(token[0] == '/'){
+						config->vayo_end_segment = mosquitto__strdup(token);
+					} else{
+						len = strlen(token) + 1;
+						config->vayo_end_segment = (char*)mosquitto__malloc(len + 1);
+						if (!config->vayo_end_segment) {
+							log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
+							return MOSQ_ERR_NOMEM;
+						}
+						snprintf(config->vayo_end_segment, len+1, "/%s", token);
+						config->vayo_end_segment[len] = '\0';
+					}
+					log__printf(NULL, MOSQ_LOG_INFO, "[Patch] vayo_end_segment: [%s] loaded for usage", config->vayo_end_segment);
+				/* Jack's patch  */	
+				} else if(!strcmp(token, "acl_file")){
 					conf__set_cur_security_options(config, cur_listener, &cur_security_options);
 					if(reload){
 						mosquitto__free(cur_security_options->acl_file);

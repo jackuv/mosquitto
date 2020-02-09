@@ -46,7 +46,7 @@ Contributors:
 #include <tcpd.h>
 #endif
 #ifdef WITH_WEBSOCKETS
-#  include <libwebsockets.h>
+#include <libwebsockets.h>
 #endif
 
 #include "mosquitto_broker_internal.h"

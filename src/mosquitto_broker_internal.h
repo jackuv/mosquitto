@@ -22,7 +22,7 @@ Contributors:
 #include <stdio.h>
 
 #ifdef WITH_WEBSOCKETS
-#  include <libwebsockets.h>
+#include <libwebsockets.h>
 
 #  if defined(LWS_LIBRARY_VERSION_NUMBER)
 #    define libwebsocket_callback_on_writable(A, B) lws_callback_on_writable((B))
@@ -315,6 +315,8 @@ struct mosquitto__config {
 	int bridge_count;
 #endif
 	struct mosquitto__security_options security_options;
+
+	char *vayo_end_segment;
 };
 
 struct mosquitto__subleaf {
