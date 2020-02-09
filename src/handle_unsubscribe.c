@@ -37,10 +37,9 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 	uint8_t *reason_codes = NULL, *reason_tmp;
 	mosquitto_property *properties = NULL;
 
-	/* Jack's patch  */
-	char *tsub;
-	int tlen;
-	/* Jack's patch  */
+	/* JP */
+	char* tsub;
+	/* JP */
 	
 	if(!context) return MOSQ_ERR_INVAL;
 
@@ -79,10 +78,7 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 
 	while(context->in_packet.pos < context->in_packet.remaining_length){
 		sub = NULL;
-		/* Jack's patch  */
-		tsub = NULL;
-		/* Jack's patch  */
-		
+				
 		if(packet__read_string(&context->in_packet, &sub, &slen)){
 			return 1;
 		}
@@ -98,25 +94,20 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 		/* Jack's patch  */
 		if (db->config->vayo_end_segment && vayo__strend(sub, db->config->vayo_end_segment)) // is vayo topic => unsubscribe without vayo 
 		{
-			char* sub_str = vayo__strndup(sub, strlen(sub) - strlen(db->config->vayo_end_segment));
-			if (!sub_str) {
-				mosquitto__free(sub);
-				return MOSQ_ERR_NOMEM;
-			}
+			slen = strlen(sub) - strlen(db->config->vayo_end_segment);
+			tsub = vayo__strndup(sub, slen);
 			mosquitto__free(sub);
-			sub = sub_str;
-		}
-		else if (!vayo__strend(sub, "/#")) // unsubscribe this and with client Id
-		{
-			tsub = vayo__topic_with_id(sub, context->id, &tlen);
-			if (!tsub) {
-				mosquitto__free(sub);
+			if (!tsub)
 				return MOSQ_ERR_NOMEM;
-			}
-			log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s", tsub);
-			sub__remove(db, context, tsub, db->subs, &reason);
-			log__printf(NULL, MOSQ_LOG_UNSUBSCRIBE, "%s %s", context->id, tsub);
-			mosquitto__free(tsub);
+			sub = tsub;
+		}
+		else if (!vayo__strend(sub, "/#")) // add client id
+		{
+			tsub = vayo__topic_with_id(sub, context->id, &slen);
+			mosquitto__free(sub);
+			if (!tsub)
+				return MOSQ_ERR_NOMEM;
+			sub = tsub;
 		}
 		/* Jack's patch  */
 

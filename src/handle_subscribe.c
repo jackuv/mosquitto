@@ -44,12 +44,10 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 	char *sub_mount;
 	mosquitto_property *properties = NULL;
 
-	/* Jack's patch */
+	/* JP */
 	char* tsub;
-	char *tsub_mount;
-	int tlen;
-	/* Jack's patch */
-
+	/* JP */
+	
 	if(!context) return MOSQ_ERR_INVAL;
 
 	if(context->state != mosq_cs_active){
@@ -86,7 +84,6 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 
 	while(context->in_packet.pos < context->in_packet.remaining_length){
 		sub = NULL;
-		tsub = NULL;
 		if(packet__read_string(&context->in_packet, &sub, &slen)){
 			mosquitto__free(payload);
 			return 1;
@@ -104,22 +101,21 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 
 			/* Jack's patch  */
 			if (db->config->vayo_end_segment && vayo__strend(sub, db->config->vayo_end_segment)) { // remove the marker from the topic
-				char* sub_str = vayo__strndup(sub, strlen(sub) - strlen(db->config->vayo_end_segment));
-				if (!sub_str) {
-					mosquitto__free(sub);
-					mosquitto__free(payload);
-					return MOSQ_ERR_NOMEM;
-				}
+				slen = strlen(sub) - strlen(db->config->vayo_end_segment);
+				tsub = vayo__strndup(sub, slen);
 				mosquitto__free(sub);
-				sub = sub_str;
+				if (!tsub)
+					return MOSQ_ERR_NOMEM;
+				sub = tsub;
 			}
 			else if (!vayo__strend(sub, "/#")) { // add client id at the end of the topic
-				tsub = vayo__topic_with_id(sub, context->id, &tlen);
+				tsub = vayo__topic_with_id(sub, context->id, &slen);
+				mosquitto__free(sub);
 				if (!tsub) {
-					mosquitto__free(sub);
 					mosquitto__free(payload);
 					return MOSQ_ERR_NOMEM;
 				}
+				sub = tsub;
 			}
 			/* Jack's patch  */
 			
@@ -173,24 +169,6 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 
 				mosquitto__free(sub);
 				sub = sub_mount;
-
-				/* Jack's patch */
-				if (tsub) {
-					len = strlen(context->listener->mount_point) + tlen + 1;
-					tsub_mount = mosquitto__malloc(len + 1);
-					if (!tsub_mount) {
-						mosquitto__free(sub);
-						mosquitto__free(payload);
-						mosquitto__free(tsub);
-						return MOSQ_ERR_NOMEM;
-					}
-					snprintf(tsub_mount, len, "%s%s", context->listener->mount_point, tsub);
-					tsub_mount[len] = '\0';
-
-					mosquitto__free(tsub);
-					tsub = tsub_mount;
-				}
-				/* Jack's patch */
 			}
 			log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s (QoS %d)", sub, qos);
 
@@ -204,10 +182,6 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 						break;
 					default:
 						mosquitto__free(sub);
-						/* Jack's patch */
-						if(tsub)
-							mosquitto__free(tsub);
-						/* Jack's patch */
 						return rc2;
 				}
 			}
@@ -216,7 +190,6 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 				rc2 = sub__add(db, context, sub, qos, subscription_identifier, subscription_options, &db->subs);
 				if(rc2 > 0){
 					mosquitto__free(sub);
-					mosquitto__free(tsub);
 					return rc2;
 				}
 				if(context->protocol == mosq_p_mqtt311 || context->protocol == mosq_p_mqtt31){
@@ -232,37 +205,9 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 				}
 
 				log__printf(NULL, MOSQ_LOG_SUBSCRIBE, "%s %d %s", context->id, qos, sub);
-
-				/* Jack's patch */
-				if (tsub) {
-					rc2 = sub__add(db, context, tsub, qos, subscription_identifier, subscription_options, &db->subs);
-					if (rc2 > 0) {
-						mosquitto__free(tsub);
-						return rc2;
-					}
-					if (context->protocol == mosq_p_mqtt311 || context->protocol == mosq_p_mqtt31) {
-						if (rc2 == MOSQ_ERR_SUCCESS || rc2 == MOSQ_ERR_SUB_EXISTS) {
-							if (sub__retain_queue(db, context, tsub, qos, 0)) rc = 1;
-						}
-					}
-					else {
-						if ((retain_handling == MQTT_SUB_OPT_SEND_RETAIN_ALWAYS)
-							|| (rc2 == MOSQ_ERR_SUCCESS && retain_handling == MQTT_SUB_OPT_SEND_RETAIN_NEW)) {
-
-							if (sub__retain_queue(db, context, tsub, qos, subscription_identifier)) rc = 1;
-						}
-					}
-					log__printf(NULL, MOSQ_LOG_SUBSCRIBE, "%s %d %s", context->id, qos, tsub);
-				}
-				/* Jack's patch */
 			}
 			mosquitto__free(sub);
-			
-			/* Jack's patch */
-			if (tsub)
-				mosquitto__free(tsub);
-			/* Jack's patch */
-
+						
 			tmp_payload = mosquitto__realloc(payload, payloadlen + 1);
 			if(tmp_payload){
 				payload = tmp_payload;
