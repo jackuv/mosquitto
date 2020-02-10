@@ -317,6 +317,7 @@ struct mosquitto__config {
 	struct mosquitto__security_options security_options;
 
 	char *vayo_end_segment;
+	char *vayo_client_mask;
 };
 
 struct mosquitto__subleaf {

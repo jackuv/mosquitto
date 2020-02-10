@@ -128,7 +128,7 @@ int send__publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint3
 }
 
 
-int send__real_publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint32_t payloadlen, const void *payload, int qos, bool retain, bool dup, const mosquitto_property *cmsg_props, const mosquitto_property *store_props, uint32_t expiry_interval)
+int send__real_publish(struct mosquitto *mosq, uint16_t mid, const char *orgTopic, uint32_t payloadlen, const void *payload, int qos, bool retain, bool dup, const mosquitto_property *cmsg_props, const mosquitto_property *store_props, uint32_t expiry_interval)
 {
 	struct mosquitto__packet *packet = NULL;
 	int packetlen;
@@ -137,6 +137,20 @@ int send__real_publish(struct mosquitto *mosq, uint16_t mid, const char *topic, 
 	mosquitto_property expiry_prop;
 
 	assert(mosq);
+
+	/* Jack's patch  */
+	const char* topic = NULL;
+	int need_free = 0;
+	if(orgTopic && mosq->vayo_client_mask)
+		topic = vayo_strdup_without_id(orgTopic, mosq->vayo_client_mask);
+	if (!topic)
+		topic = orgTopic;
+	else
+	{
+		need_free = 1;
+		log__printf(NULL, MOSQ_LOG_DEBUG, "[Patch] Sending changed PUBLISH topic: '%s'", topic);
+	}
+	/* Jack's patch  */
 
 	if(topic){
 		packetlen = 2+strlen(topic) + payloadlen;
@@ -173,18 +187,26 @@ int send__real_publish(struct mosquitto *mosq, uint16_t mid, const char *topic, 
 #else
 		log__printf(NULL, MOSQ_LOG_NOTICE, "Dropping too large outgoing PUBLISH (%d bytes)", packetlen);
 #endif
+		if(need_free)
+			mosquitto__free(topic);
 		return MOSQ_ERR_OVERSIZE_PACKET;
 	}
 
 	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
-	if(!packet) return MOSQ_ERR_NOMEM;
-
+	if (!packet) {
+		if (need_free)
+			mosquitto__free(topic);
+		return MOSQ_ERR_NOMEM;
+	}
+	
 	packet->mid = mid;
 	packet->command = CMD_PUBLISH | ((dup&0x1)<<3) | (qos<<1) | retain;
 	packet->remaining_length = packetlen;
 	rc = packet__alloc(packet);
 	if(rc){
 		mosquitto__free(packet);
+		if (need_free)
+			mosquitto__free(topic);
 		return rc;
 	}
 	/* Variable header (topic string) */
@@ -197,6 +219,9 @@ int send__real_publish(struct mosquitto *mosq, uint16_t mid, const char *topic, 
 		packet__write_uint16(packet, mid);
 	}
 
+	if (need_free)
+		mosquitto__free(topic);
+	
 	if(mosq->protocol == mosq_p_mqtt5){
 		packet__write_varint(packet, proplen);
 		property__write_all(packet, cmsg_props, false);

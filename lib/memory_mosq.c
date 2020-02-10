@@ -158,3 +158,68 @@ char *mosquitto__strdup(const char *s)
 	return str;
 }
 
+
+int vayo__strend(const char *s, const char *t)
+{
+	size_t ls = strlen(s); // find length of s
+	size_t lt = strlen(t); // find length of t
+	if (ls >= lt)  // check if t can fit in s
+	{
+		// point s to where t should start and compare the strings from there
+		return (0 == memcmp(t, s + (ls - lt), lt));
+	}
+	return 0; // t was longer than s
+}
+
+char *vayo__strndup(const char *s, size_t n) {
+	char *p = memchr(s, '\0', n);
+	if (p != NULL)
+		n = p - s;
+	p = malloc(n + 1);
+	if (p != NULL) {
+		memcpy(p, s, n);
+		p[n] = '\0';
+	}
+	return p;
+}
+
+char *vayo__topic_with_id(const char *topic, const char * id, int* len){
+	*len = strlen(topic) + strlen(id) + 1;
+	char* result = (char*)mosquitto__malloc(*len + 1);
+	if (!result)
+		return NULL;
+	snprintf(result, *len + 1, "%s/%s", topic, id);
+	result[*len] = '\0';
+	return result;
+}
+
+int startsWith(const char *pre, const char *str)
+{
+	size_t lenpre = strlen(pre),
+		lenstr = strlen(str);
+	return lenstr < lenpre ? 0 : memcmp(pre, str, lenpre) == 0;
+}
+
+char *vayo_strdup_without_id(const char *topic, const char* client_id_part) {
+	if (!topic)
+		return NULL;
+	
+	int len = strlen(topic);
+	if (len < 2)
+		return NULL;
+		
+	int i;
+	for(i=len-1; i>=0; i--){
+		if(topic[i] == '/')
+			break;
+	}
+	
+	if (i == 0 || i == len-1 || !startsWith(client_id_part, &topic[i+1]))
+		return NULL;
+			
+	char* p = vayo__strndup(topic, i);
+	if (!p)
+		return NULL;
+
+	return p;
+}

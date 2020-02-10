@@ -233,6 +233,8 @@ static void config__init_reload(struct mosquitto_db *db, struct mosquitto__confi
 	/* Jack's patch */
 	mosquitto__free(config->vayo_end_segment);
 	config->vayo_end_segment = NULL;
+	mosquitto__free(config->vayo_client_mask);
+	config->vayo_client_mask = NULL;
 	/* Jack's patch */
 	
 	config__cleanup_plugins(config);
@@ -386,6 +388,10 @@ void config__cleanup(struct mosquitto__config *config)
 	if(config->vayo_end_segment){
 		mosquitto__free(config->vayo_end_segment);
 		config->vayo_end_segment = NULL;
+	}
+	if (config->vayo_client_mask) {
+		mosquitto__free(config->vayo_client_mask);
+		config->vayo_client_mask = NULL;
 	}
 	/* Jack's patch */
 }
@@ -618,6 +624,8 @@ void config__copy(struct mosquitto__config *src, struct mosquitto__config *dest)
 	/* Jack's patch */
 	mosquitto__free(dest->vayo_end_segment);
 	dest->vayo_end_segment = src->vayo_end_segment;
+	mosquitto__free(dest->vayo_client_mask);
+	dest->vayo_client_mask = src->vayo_client_mask;
 	/* Jack's patch */
 
 #ifdef WITH_WEBSOCKETS
@@ -818,6 +826,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 
 	*lineno = 0;
 	config->vayo_end_segment = NULL;
+	config->vayo_client_mask = NULL;
 
 	while(fgets_extending(buf, buflen, fptr)){
 		(*lineno)++;
@@ -828,7 +837,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 			token = strtok_r((*buf), " ", &saveptr);
 			if(token){
 				/* Jack's patch  */
-				if(!strcmp(token, "vayo_end_segment")){
+				if(!strcmp(token, "vayo_end_segment")) {
 					token = strtok_r(NULL, " ", &saveptr);
 					if(token[0] == '/'){
 						config->vayo_end_segment = mosquitto__strdup(token);
@@ -843,8 +852,13 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 						config->vayo_end_segment[len] = '\0';
 					}
 					log__printf(NULL, MOSQ_LOG_INFO, "[Patch] vayo_end_segment: [%s] loaded for usage", config->vayo_end_segment);
-				/* Jack's patch  */	
-				} else if(!strcmp(token, "acl_file")){
+				} else if(!strcmp(token, "vayo_client_mask"))	{
+					token = strtok_r(NULL, " ", &saveptr);
+					config->vayo_client_mask = mosquitto__strdup(token);
+					log__printf(NULL, MOSQ_LOG_INFO, "[Patch] vayo_client_mask: [%s] loaded for usage", config->vayo_client_mask);
+				}
+				/* Jack's patch  */
+				else if(!strcmp(token, "acl_file")){
 					conf__set_cur_security_options(config, cur_listener, &cur_security_options);
 					if(reload){
 						mosquitto__free(cur_security_options->acl_file);
