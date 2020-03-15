@@ -36,6 +36,9 @@ Contributors:
 #  include <libwebsockets.h>
 #endif
 
+#define CURL_STATICLIB
+#include <curl\curl.h>
+#include <asprintf.h>
 
 static char nibble_to_hex(uint8_t value)
 {
@@ -100,6 +103,58 @@ void connection_check_acl(struct mosquitto_db *db, struct mosquitto *context, st
 	}
 }
 
+/* Jack */
+size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp)
+{
+	return size * nmemb;
+}
+
+int http_get_request(const char* fmtUrl, const char* id, const long timeout) {
+	int result = 0;
+
+	char* req_url = NULL;
+	if(asprintf(&req_url, fmtUrl, id) == -1)
+	{
+		log__printf(NULL, MOSQ_LOG_ERR, "[http_get_request] asprintf() failed");
+		return 1;
+	}
+		
+	CURL* curl = curl_easy_init();
+	if (curl) {
+		curl_easy_setopt(curl, CURLOPT_URL, req_url);
+		if(timeout > 0)
+			curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout); // seconds
+
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+		
+		/* example.com is redirected, so we tell libcurl to follow redirection */
+		// curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+
+		const CURLcode res = curl_easy_perform(curl);
+		/* Check for errors */
+		if (res != CURLE_OK)
+		{
+			log__printf(NULL, MOSQ_LOG_ERR, "[http_get_request] curl_easy_perform() failed: %s", curl_easy_strerror(res));
+			result = 1;
+		}
+
+		long response_code;
+		curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+		if(response_code != 200)
+		{
+			log__printf(NULL, MOSQ_LOG_ERR, "[http_get_request] %s: bad response code %d", req_url, response_code);
+			result = 1;
+		}
+	}
+	else {
+		log__printf(NULL, MOSQ_LOG_ERR, "[http_get_request] curl_easy_init() failed");
+		result = 1;
+	}
+
+	mosquitto__free(req_url);
+	curl_easy_cleanup(curl);
+	return result;
+}
 
 int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, void *auth_data_out, uint16_t auth_data_out_len)
 {
@@ -227,6 +282,17 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 #endif
 	context->maximum_qos = context->listener->maximum_qos;
 
+	/* Jack's patch */
+	if(db->config->vayo_http_url)
+	{
+		if (http_get_request(db->config->vayo_http_url, context->id, db->config->vayo_http_timeout))
+		{
+			rc = MOSQ_ERR_NOMEM;
+			goto error;
+		}
+	}
+	/* Jack's patch */
+	
 	if(context->protocol == mosq_p_mqtt5){
 		if(context->maximum_qos != 2){
 			if(mosquitto_property_add_byte(&connack_props, MQTT_PROP_MAXIMUM_QOS, context->maximum_qos)){

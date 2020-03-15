@@ -141,8 +141,8 @@ int send__real_publish(struct mosquitto *mosq, uint16_t mid, const char *orgTopi
 	/* Jack's patch  */
 	const char* topic = NULL;
 	int need_free = 0;
-	if(orgTopic && mosq->vayo_client_mask)
-		topic = vayo_strdup_without_id(orgTopic, mosq->vayo_client_mask);
+	if(orgTopic && mosq->vayo_client_mask && mosq->vayo_topic_mask)
+		topic = vayo_strdup_without_id(orgTopic, mosq->vayo_client_mask, mosq->vayo_topic_mask);
 	if (!topic)
 		topic = orgTopic;
 	else

@@ -347,6 +347,7 @@ struct mosquitto {
 	uint32_t events;
 #endif
 	char* vayo_client_mask;
+	char* vayo_topic_mask;
 };
 
 #define STREMPTY(str) (str[0] == '\0')

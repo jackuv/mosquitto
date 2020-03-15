@@ -41,6 +41,8 @@ void memory__set_limit(size_t lim);
 int  vayo__strend(const char *s, const char *t);
 char *vayo__strndup(const char *s, size_t n);
 char *vayo__topic_with_id(const char *topic, const char * id, int* len);
-char *vayo_strdup_without_id(const char *topic, const char* client_id_part);
+char *vayo_strdup_without_id(const char *topic, const char* client_id_part, const char* vayo_topic_mask);
+char* vayo_concat(const char *s1, const char *s2);
+char* vayo_path_combine(const char *s1, const char *s2);
 
 #endif

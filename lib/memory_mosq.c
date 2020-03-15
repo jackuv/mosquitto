@@ -200,14 +200,17 @@ int startsWith(const char *pre, const char *str)
 	return lenstr < lenpre ? 0 : memcmp(pre, str, lenpre) == 0;
 }
 
-char *vayo_strdup_without_id(const char *topic, const char* client_id_part) {
-	if (!topic)
+char *vayo_strdup_without_id(const char *topic, const char* client_id_part, const char* vayo_topic_mask) {
+	if (!topic || !vayo_topic_mask)
 		return NULL;
 	
 	int len = strlen(topic);
 	if (len < 2)
 		return NULL;
-		
+
+	if (!startsWith(vayo_topic_mask, topic))
+		return NULL;
+
 	int i;
 	for(i=len-1; i>=0; i--){
 		if(topic[i] == '/')
@@ -222,4 +225,27 @@ char *vayo_strdup_without_id(const char *topic, const char* client_id_part) {
 		return NULL;
 
 	return p;
+}
+
+char* vayo_concat(const char *s1, const char *s2)
+{
+	char *result = malloc(strlen(s1) + strlen(s2) + 1);
+	if (!result)
+		return NULL;
+
+	strcpy(result, s1);
+	strcat(result, s2);
+	return result;
+}
+
+char* vayo_path_combine(const char *s1, const char *s2)
+{
+	char *result = malloc(strlen(s1) + strlen(s2) + 2);
+	if (!result)
+		return NULL;
+
+	strcpy(result, s1);
+	strcat(result, "/");
+	strcat(result, s2);
+	return result;
 }

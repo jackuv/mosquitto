@@ -318,6 +318,10 @@ struct mosquitto__config {
 
 	char *vayo_end_segment;
 	char *vayo_client_mask;
+	char *vayo_topic_mask;
+	char *vayo_http_url;
+	int vayo_http_timeout;
+	
 };
 
 struct mosquitto__subleaf {

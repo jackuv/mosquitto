@@ -235,6 +235,10 @@ static void config__init_reload(struct mosquitto_db *db, struct mosquitto__confi
 	config->vayo_end_segment = NULL;
 	mosquitto__free(config->vayo_client_mask);
 	config->vayo_client_mask = NULL;
+	mosquitto__free(config->vayo_topic_mask);
+	config->vayo_topic_mask = NULL;
+	mosquitto__free(config->vayo_http_url);
+	config->vayo_http_url = NULL;
 	/* Jack's patch */
 	
 	config__cleanup_plugins(config);
@@ -392,6 +396,14 @@ void config__cleanup(struct mosquitto__config *config)
 	if (config->vayo_client_mask) {
 		mosquitto__free(config->vayo_client_mask);
 		config->vayo_client_mask = NULL;
+	}
+	if (config->vayo_topic_mask) {
+		mosquitto__free(config->vayo_topic_mask);
+		config->vayo_topic_mask = NULL;
+	}
+	if (config->vayo_http_url) {
+		mosquitto__free(config->vayo_http_url);
+		config->vayo_http_url = NULL;
 	}
 	/* Jack's patch */
 }
@@ -626,6 +638,10 @@ void config__copy(struct mosquitto__config *src, struct mosquitto__config *dest)
 	dest->vayo_end_segment = src->vayo_end_segment;
 	mosquitto__free(dest->vayo_client_mask);
 	dest->vayo_client_mask = src->vayo_client_mask;
+	mosquitto__free(dest->vayo_topic_mask);
+	dest->vayo_topic_mask = src->vayo_topic_mask;
+	mosquitto__free(dest->vayo_http_url);
+	dest->vayo_http_url = src->vayo_http_url;
 	/* Jack's patch */
 
 #ifdef WITH_WEBSOCKETS
@@ -827,6 +843,8 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 	*lineno = 0;
 	config->vayo_end_segment = NULL;
 	config->vayo_client_mask = NULL;
+	config->vayo_topic_mask = NULL;
+	config->vayo_http_url = NULL;
 
 	while(fgets_extending(buf, buflen, fptr)){
 		(*lineno)++;
@@ -856,6 +874,23 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					token = strtok_r(NULL, " ", &saveptr);
 					config->vayo_client_mask = mosquitto__strdup(token);
 					log__printf(NULL, MOSQ_LOG_INFO, "[Patch] vayo_client_mask: [%s] loaded for usage", config->vayo_client_mask);
+				} else if (!strcmp(token, "vayo_topic_mask")) {
+					token = strtok_r(NULL, " ", &saveptr);
+					config->vayo_topic_mask = mosquitto__strdup(token);
+					log__printf(NULL, MOSQ_LOG_INFO, "[Patch] vayo_topic_mask: [%s] loaded for usage", config->vayo_topic_mask);
+				} else if (!strcmp(token, "vayo_http_url")) {
+					token = strtok_r(NULL, " ", &saveptr);
+					config->vayo_http_url = mosquitto__strdup(token);
+					log__printf(NULL, MOSQ_LOG_INFO, "[Patch] vayo_http_url: [%s] loaded for usage", config->vayo_http_url);
+				} else if (!strcmp(token, "vayo_http_timeout")) {
+					token = strtok_r(NULL, " ", &saveptr);
+					tmp_int = atoi(token);
+					if (tmp_int < 1 || tmp_int > 60) {
+						log__printf(NULL, MOSQ_LOG_ERR, "[Patch]: Error. Invalid vayo_http_timeout value (%d). Must be (1-60). Set to 1", tmp_int);
+						config->vayo_http_timeout = 1;
+					}
+					config->vayo_http_timeout = tmp_int;
+					log__printf(NULL, MOSQ_LOG_INFO, "[Patch] vayo_http_timeout: [%d] loaded for usage", config->vayo_http_timeout);
 				}
 				/* Jack's patch  */
 				else if(!strcmp(token, "acl_file")){
