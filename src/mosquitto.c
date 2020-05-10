@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef WIN32
-	_setmaxstdio(2048);
+	_setmaxstdio(8192);
 #endif
 
 	memset(&int_db, 0, sizeof(struct mosquitto_db));
