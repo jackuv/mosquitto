@@ -109,18 +109,30 @@ size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 	return size * nmemb;
 }
 
-int http_get_request(const char* fmtUrl, const char* id, const long timeout) {
+int http_get_request(const char* fmtUrl, const char* id, const char* user, const char* pass, const long timeout) {
 	int result = 0;
-
 	char* req_url = NULL;
-	if(asprintf(&req_url, fmtUrl, id) == -1)
-	{
-		log__printf(NULL, MOSQ_LOG_ERR, "[http_get_request] asprintf() failed");
-		return 1;
-	}
 		
 	CURL* curl = curl_easy_init();
 	if (curl) {
+		char* u = user? curl_easy_escape(curl, user, 0): NULL;
+		char* p = pass? curl_easy_escape(curl, pass, 0): NULL;
+		
+		if(asprintf(&req_url, fmtUrl, id, u? u: "", p? p: "") == -1)
+		{
+			if(u)
+				curl_free(u);
+			if(p)
+				curl_free(p);
+			log__printf(NULL, MOSQ_LOG_ERR, "[http_get_request] asprintf() failed");
+			return 1;
+		}
+		if(u)
+			curl_free(u);
+		if(p)
+			curl_free(p);
+			   		
+		
 		curl_easy_setopt(curl, CURLOPT_URL, req_url);
 		if(timeout > 0)
 			curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout); // seconds
@@ -285,7 +297,7 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 	/* Jack's patch */
 	if(db->config->vayo_http_url)
 	{
-		if (http_get_request(db->config->vayo_http_url, context->id, db->config->vayo_http_timeout))
+		if (http_get_request(db->config->vayo_http_url, context->id, context->username, context->password, db->config->vayo_http_timeout))
 		{
 			rc = MOSQ_ERR_NOMEM;
 			goto error;
