@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009-2019 Roger Light <roger@atchoo.org>
+Copyright (c) 2009-2020 Roger Light <roger@atchoo.org>
 
 All rights reserved. This program and the accompanying materials
 are made available under the terms of the Eclipse Public License v1.0
@@ -80,6 +80,7 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 		sub = NULL;
 				
 		if(packet__read_string(&context->in_packet, &sub, &slen)){
+			mosquitto__free(reason_codes);
 			return 1;
 		}
 
@@ -88,6 +89,7 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 					"Empty unsubscription string from %s, disconnecting.",
 					context->id);
 			mosquitto__free(sub);
+			mosquitto__free(reason_codes);
 			return 1;
 		}
 
@@ -116,6 +118,7 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 					"Invalid unsubscription string from %s, disconnecting.",
 					context->id);
 			mosquitto__free(sub);
+			mosquitto__free(reason_codes);
 			return 1;
 		}
 
@@ -124,7 +127,10 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 		log__printf(NULL, MOSQ_LOG_UNSUBSCRIBE, "%s %s", context->id, sub);
 
 		mosquitto__free(sub);
-		if(rc) return rc;
+		if(rc){
+			mosquitto__free(reason_codes);
+			return rc;
+		}
 
 		reason_codes[reason_code_count] = reason;
 		reason_code_count++;
@@ -149,4 +155,3 @@ int handle__unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 	mosquitto__free(reason_codes);
 	return rc;
 }
-
