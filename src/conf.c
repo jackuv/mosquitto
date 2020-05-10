@@ -866,7 +866,7 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					tmp_int = atoi(token);
 					if (tmp_int < 1 || tmp_int > 60) {
 						log__printf(NULL, MOSQ_LOG_ERR, "[Patch]: Error. Invalid vayo_http_timeout value (%d). Must be (1-60). Set to 1", tmp_int);
-						config->vayo_http_timeout = 1;
+						tmp_int = 5;
 					}
 					config->vayo_http_timeout = tmp_int;
 					log__printf(NULL, MOSQ_LOG_INFO, "[Patch] vayo_http_timeout: [%d] loaded for usage", config->vayo_http_timeout);

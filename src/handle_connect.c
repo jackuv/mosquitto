@@ -109,58 +109,58 @@ size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 	return size * nmemb;
 }
 
-int http_get_request(const char* fmtUrl, const char* id, const char* user, const char* pass, const long timeout) {
-	int result = 0;
+int http_get_request(const char* fmtUrl, const char* id, const char* user, const char* pass, long timeout) {
+	int result = 0; // allow to process
 	char* req_url = NULL;
 		
 	CURL* curl = curl_easy_init();
-	if (curl) {
-		char* u = user? curl_easy_escape(curl, user, 0): NULL;
-		char* p = pass? curl_easy_escape(curl, pass, 0): NULL;
-		
-		if(asprintf(&req_url, fmtUrl, id, u? u: "", p? p: "") == -1)
-		{
-			if(u)
-				curl_free(u);
-			if(p)
-				curl_free(p);
-			log__printf(NULL, MOSQ_LOG_ERR, "[http_get_request] asprintf() failed");
-			return 1;
-		}
-		if(u)
-			curl_free(u);
-		if(p)
-			curl_free(p);
-			   		
-		
-		curl_easy_setopt(curl, CURLOPT_URL, req_url);
-		if(timeout > 0)
-			curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout); // seconds
+	if(!curl) {
+		log__printf(NULL, MOSQ_LOG_DEBUG, "[http_get_request] curl_easy_init() failed");
+		return result; // allow to process
+	}
 
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+	char* u = user? curl_easy_escape(curl, user, 0): NULL;
+	char* p = pass? curl_easy_escape(curl, pass, 0): NULL;
+	int req_url_err = asprintf(&req_url, fmtUrl, id, u? u: "", p? p: "") == -1;
+	if(u)
+		curl_free(u);
+	if(p)
+		curl_free(p);
+
+	if(req_url_err)
+	{
+		curl_easy_cleanup(curl);
+		log__printf(NULL, MOSQ_LOG_DEBUG, "[http_get_request] asprintf() failed");
+		return result; // allow to process
+	}
 		
-		/* example.com is redirected, so we tell libcurl to follow redirection */
-		// curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(curl, CURLOPT_URL, req_url);
+	curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout? timeout: 5L); // seconds
 
-		const CURLcode res = curl_easy_perform(curl);
-		/* Check for errors */
-		if (res != CURLE_OK)
-		{
-			log__printf(NULL, MOSQ_LOG_ERR, "[http_get_request] curl_easy_perform() failed: %s", curl_easy_strerror(res));
-			result = 1;
-		}
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
 
+	/* complete connection within 10 seconds */
+	// curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
+		
+	/* example.com is redirected, so we tell libcurl to follow redirection */
+	// curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+
+	const CURLcode res = curl_easy_perform(curl);
+	/* Check for errors */
+	if (res != CURLE_OK)
+	{
+		log__printf(NULL, MOSQ_LOG_DEBUG, "[http_get_request] curl_easy_perform() failed: %s", curl_easy_strerror(res));
+	}
+	else
+	{
 		long response_code;
 		curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
 		if(response_code != 200)
 		{
-			log__printf(NULL, MOSQ_LOG_ERR, "[http_get_request] %s: bad response code %d", req_url, response_code);
-			result = 1;
+			if(response_code == 401)
+				result = 1; // stop processing
+			log__printf(NULL, MOSQ_LOG_DEBUG, "[http_get_request] %s: bad response code %d", req_url, response_code);
 		}
-	}
-	else {
-		log__printf(NULL, MOSQ_LOG_ERR, "[http_get_request] curl_easy_init() failed");
-		result = 1;
 	}
 
 	mosquitto__free(req_url);
