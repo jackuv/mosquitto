@@ -33,7 +33,7 @@ Contributors:
 #include "will_mosq.h"
 
 #ifdef WITH_WEBSOCKETS
-#  include <libwebsockets.h>
+#include <libwebsockets.h>
 #endif
 
 #define CURL_STATICLIB
