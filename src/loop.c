@@ -155,7 +155,9 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 
 #ifndef WITH_EPOLL
 #ifdef WIN32
-	pollfd_max = _getmaxstdio();
+	pollfd_max = _setmaxstdio(8192);
+	if(pollfd_max == -1)
+		pollfd_max = _getmaxstdio();
 #else
 	pollfd_max = sysconf(_SC_OPEN_MAX);
 #endif
