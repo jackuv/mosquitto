@@ -241,6 +241,9 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				return -1;
 			}
 			mosq->sock = libwebsocket_get_socket_fd(wsi);
+
+			mosq->threadIndex = rand() % (MAX_THREADS - 1) + 1;
+			mosq->threadId = db->threadIds[mosq->threadIndex];
 			HASH_ADD(hh_sock, db->contexts_by_sock, sock, sizeof(mosq->sock), mosq);
 			break;
 

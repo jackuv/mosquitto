@@ -32,9 +32,9 @@ Contributors:
 #include <stdlib.h>
 
 #if defined(WITH_THREADING) && !defined(WITH_BROKER)
-#  include <pthread.h>
+#  include "mosquitto_threading.h"
 #else
-#  include <dummypthread.h>
+#  include "dummy_threading.h"
 #endif
 
 #ifdef WITH_SRV
@@ -196,7 +196,7 @@ struct mosquitto_msg_data{
 	struct mosquitto_message_all *inflight;
 	int queue_len;
 #  ifdef WITH_THREADING
-	pthread_mutex_t mutex;
+	mosquitto_mutex mutex;
 #  endif
 #endif
 	int inflight_quota;
@@ -257,14 +257,15 @@ struct mosquitto {
 	bool want_write;
 	bool want_connect;
 #if defined(WITH_THREADING) && !defined(WITH_BROKER)
-	pthread_mutex_t callback_mutex;
-	pthread_mutex_t log_callback_mutex;
-	pthread_mutex_t msgtime_mutex;
-	pthread_mutex_t out_packet_mutex;
-	pthread_mutex_t current_out_packet_mutex;
-	pthread_mutex_t state_mutex;
-	pthread_mutex_t mid_mutex;
-	pthread_t thread_id;
+	mosquitto_mutex callback_mutex;
+	mosquitto_mutex log_callback_mutex;
+	mosquitto_mutex msgtime_mutex;
+	mosquitto_mutex out_packet_mutex;
+	mosquitto_mutex current_out_packet_mutex;
+	mosquitto_mutex state_mutex;
+	mosquitto_mutex mid_mutex;
+	mosquitto_mutex ping_mutex;
+	mosquitto_thread_handle thread_id;
 #endif
 	bool clean_start;
 	uint32_t session_expiry_interval;
@@ -347,6 +348,8 @@ struct mosquitto {
 #endif
 	char* vayo_client_mask;
 	char* vayo_topic_mask;
+	DWORD threadId;
+	int threadIndex;
 };
 
 #define STREMPTY(str) (str[0] == '\0')

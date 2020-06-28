@@ -403,6 +403,8 @@ int bridge__connect(struct mosquitto_db *db, struct mosquitto *context)
 		mosquitto__set_state(context, mosq_cs_connect_pending);
 	}
 
+	context->threadIndex = rand() % (MAX_THREADS - 1) + 1;
+	context->threadId = db->threadIds[context->threadIndex];
 	HASH_ADD(hh_sock, db->contexts_by_sock, sock, sizeof(context->sock), context);
 
 	rc2 = send__connect(context, context->keepalive, context->clean_start, NULL);

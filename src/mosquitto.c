@@ -289,6 +289,13 @@ int main(int argc, char *argv[])
 	rc = mosquitto_security_init(&int_db, false);
 	if(rc) return rc;
 
+	int_db.socket_mutex = CreateMutex( NULL, FALSE, NULL);
+	if (int_db.socket_mutex == NULL) 
+    {
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create socket mutex");
+		return 1;
+    }
+	
 #ifdef WITH_SYS_TREE
 	sys_tree__init(&int_db);
 #endif
@@ -369,7 +376,7 @@ int main(int argc, char *argv[])
 #endif
 
 	run = 1;
-	rc = mosquitto_main_loop(&int_db, listensock, listensock_count);
+	rc = mosquitto_main_loop_threaded(&int_db, listensock, listensock_count);
 
 	log__printf(NULL, MOSQ_LOG_INFO, "mosquitto version %s terminating", VERSION);
 
@@ -433,6 +440,8 @@ int main(int argc, char *argv[])
 	mosquitto__free(listensock);
 
 	mosquitto_security_module_cleanup(&int_db);
+
+	CloseHandle(int_db.socket_mutex);
 
 	if(config.pid_file){
 		remove(config.pid_file);

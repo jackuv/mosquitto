@@ -73,6 +73,7 @@ Contributors:
 
 #define TOPIC_HIERARCHY_LIMIT 200
 
+#define MAX_THREADS 64
 /* ========================================
  * UHPA data types
  * ======================================== */
@@ -458,6 +459,8 @@ struct mosquitto_db{
 #ifdef WITH_EPOLL
 	int epollfd;
 #endif
+	HANDLE socket_mutex;
+	DWORD threadIds[MAX_THREADS];
 };
 
 enum mosquitto__bridge_direction{
@@ -555,6 +558,7 @@ struct libws_mqtt_data {
  * Main functions
  * ============================================================ */
 int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int listensock_count);
+int mosquitto_main_loop_threaded(struct mosquitto_db *db, mosq_sock_t *listensock, int listensock_count);
 struct mosquitto_db *mosquitto__get_db(void);
 
 /* ============================================================
