@@ -376,7 +376,7 @@ int main(int argc, char *argv[])
 #endif
 
 	run = 1;
-	rc = mosquitto_main_loop_threaded(&int_db, listensock, listensock_count);
+	rc = mosquitto_main_loop(&int_db, listensock, listensock_count);
 
 	log__printf(NULL, MOSQ_LOG_INFO, "mosquitto version %s terminating", VERSION);
 

@@ -257,11 +257,11 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 			}
 		}else{
 			if(context->username){
-				log__printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s as %s (p%d, c%d, k%d, u'%s', t%d).",
-						context->address, context->id, context->protocol, context->clean_start, context->keepalive, context->username, context->threadIndex);
+				log__printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s as %s (p%d, c%d, k%d, u'%s').",
+						context->address, context->id, context->protocol, context->clean_start, context->keepalive, context->username);
 			}else{
-				log__printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s as %s (p%d, c%d, k%d, t%d).",
-						context->address, context->id, context->protocol, context->clean_start, context->keepalive, context->threadIndex);
+				log__printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s as %s (p%d, c%d, k%d).",
+						context->address, context->id, context->protocol, context->clean_start, context->keepalive);
 			}
 		}
 

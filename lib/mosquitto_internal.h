@@ -342,6 +342,11 @@ struct mosquitto {
 	UT_hash_handle hh_sock;
 	struct mosquitto *for_free_next;
 	struct session_expiry_list *expiry_list_item;
+
+	UT_hash_handle hh_sock0;
+	UT_hash_handle hh_sock1;
+	UT_hash_handle hh_sock2;
+	UT_hash_handle hh_sock3;
 #endif
 #ifdef WITH_EPOLL
 	uint32_t events;
@@ -350,6 +355,7 @@ struct mosquitto {
 	char* vayo_topic_mask;
 	DWORD threadId;
 	int threadIndex;
+	int deleteRequired;
 };
 
 #define STREMPTY(str) (str[0] == '\0')

@@ -111,15 +111,84 @@ static struct lws_sorted_usec_list sul;
 
 typedef struct mosquitto_thread_arg {
 	struct mosquitto_db *db;
-	struct mosq_sock_t *listensock;
+	mosq_sock_t *listensock;
 	int listensock_count;
 	int pollStartIndex;
 	int pollsize;
 	int threadIndex;
 } matdata, *pmatdata;
 
+typedef struct mosquitto_listener_arg {
+	struct mosquitto_db *db;
+	mosq_sock_t listensock;
+} listener_data, *plistener_data;
+
 DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam);
 
+void assignRandomThread(struct mosquitto_db *db, struct mosquitto* context)
+{
+	context->threadIndex = rand() % MAX_THREADS;
+	context->threadId = db->threadIds[context->threadIndex];		
+}
+
+void accept_connections(LPVOID *lpParam)
+{
+	plistener_data arg = (plistener_data)lpParam;
+	struct mosquitto_db *db = arg->db;
+	mosq_sock_t listensock = arg->listensock;
+		
+	/*while(run)
+	{
+		net__socket_accept(db, listensock);
+	}*/
+
+	/*struct pollfd *pollfds = NULL;
+	int pollfd_index = 0;
+	int pollfd_max = 1;
+	int fdcount;
+	pollfds = mosquitto__malloc(sizeof(struct pollfd)*pollfd_max);
+	if(!pollfds){
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
+		return;
+	}
+		
+	while(run)
+	{
+		memset(pollfds, -1, sizeof(struct pollfd)*pollfd_max);
+		pollfd_index = 0;
+		
+		pollfds[pollfd_index].fd = listensock;
+		pollfds[pollfd_index].events = POLLIN;
+		pollfds[pollfd_index].revents = 0;
+		pollfd_index++;
+		fdcount = WSAPoll(pollfds, pollfd_index, 100);
+		
+		if(fdcount == -1)
+		{
+			if(pollfd_index == 0 && WSAGetLastError() == WSAEINVAL)
+				Sleep(10);
+			else
+				log__printf(NULL, MOSQ_LOG_ERR, "Error in poll: %s.", strerror(errno));
+		}
+		else
+		{
+			if(pollfds[0].revents & (POLLIN | POLLPRI)){
+				while(net__socket_accept(db, listensock) != -1){
+				}
+			}
+		}
+		
+	}*/
+		
+	struct mosquitto *context;
+	while(run)
+	{
+		context = net__socket_accept(db, listensock);
+		if(context == NULL)
+			continue;
+		assignRandomThread(db, context);
+	}
+}
 
 int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int listensock_count)
 {
@@ -370,11 +439,9 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 			}
 		}
 #endif
-
+				
 		time_count = 0;
 		HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){ // UT_hash_handle, like array, current item, tmp
-			if(GetCurrentThreadId() != context->threadId)
-				continue;
 			if(time_count > 0){
 				time_count--;
 			}else{
@@ -548,7 +615,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 
 			for(i=0; i<listensock_count; i++){ // first two listen sockets
 				if(pollfds[i].revents & (POLLIN | POLLPRI)){
-					while(net__socket_accept(db, listensock[i]) != -1){
+					while(net__socket_accept(db, listensock[i]) != NULL){
 					}
 				}
 			}
@@ -631,6 +698,47 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 
 int mosquitto_main_loop_threaded(struct mosquitto_db *db, mosq_sock_t *listensock, int listensock_count)
 {
+	plistener_data* pListenerDataArray = malloc(listensock_count * sizeof(listener_data));
+	if(!pListenerDataArray)
+	{
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory. Unable listener thread args array");
+		return MOSQ_ERR_NOMEM; 
+	}
+	HANDLE* hListenerThreadArray = malloc(listensock_count * sizeof(HANDLE));
+	if(!hListenerThreadArray)
+	{
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory. Unable listener threads");
+		return MOSQ_ERR_NOMEM; 
+	}
+	
+	for(int i = 0; i < listensock_count; i++)
+	{
+		pListenerDataArray[i] = (plistener_data) HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(listener_data));
+		if(pListenerDataArray[i] == NULL)
+        {
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory. Unable create thread args");
+			return MOSQ_ERR_NOMEM; 
+        }
+
+		pListenerDataArray[i]->listensock = listensock[i];
+		pListenerDataArray[i]->db = db;
+
+		hListenerThreadArray[i] = CreateThread( 
+            NULL,						// default security attributes
+            0,							// use default stack size  
+            accept_connections,			// thread function name
+            pListenerDataArray[i],				// argument to thread function 
+            0,							// use default creation flags 
+            NULL);		// returns the thread identifier
+		
+		
+		if (hListenerThreadArray[i] == NULL) 
+        {
+           log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory. Unable create listener thread");
+           return MOSQ_ERR_NOMEM;
+        }
+	}
+		
 	pmatdata pDataArray[MAX_THREADS];
 	DWORD   dwThreadIdArray[MAX_THREADS];
 	HANDLE  hThreadArray[MAX_THREADS]; 
@@ -638,8 +746,9 @@ int mosquitto_main_loop_threaded(struct mosquitto_db *db, mosq_sock_t *listensoc
 	int pollfd_max = 32000;
 	int index = 0;
 	int size = pollfd_max / MAX_THREADS;
-		
-	for(int i = 0; i <= MAX_THREADS; i++)
+	
+
+	for(int i = 0; i < MAX_THREADS; i++)
 	{
 		pDataArray[i] = (pmatdata) HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(matdata));
 		if(pDataArray[i] == NULL)
@@ -653,20 +762,11 @@ int mosquitto_main_loop_threaded(struct mosquitto_db *db, mosq_sock_t *listensoc
 		pDataArray[i]->listensock = listensock;
 		pDataArray[i]->listensock_count = listensock_count;
 		pDataArray[i]->pollStartIndex = index;
-		if(i == 0)
-		{
-			pDataArray[i]->pollsize = listensock_count;
-			if(index + listensock_count >= pollfd_max)
-				pDataArray[i]->pollsize = pollfd_max - index;
-			index += listensock_count;
-		}
-		else
-		{
-			pDataArray[i]->pollsize = size;
-			if(index + size >= pollfd_max)
-				pDataArray[i]->pollsize = pollfd_max - index;
-			index += size;
-		}
+
+		pDataArray[i]->pollsize = size;
+		if(index + size >= pollfd_max)
+			pDataArray[i]->pollsize = pollfd_max - index;
+		index += pDataArray[i]->pollsize;
 		
 		hThreadArray[i] = CreateThread( 
             NULL,						// default security attributes
@@ -675,18 +775,31 @@ int mosquitto_main_loop_threaded(struct mosquitto_db *db, mosq_sock_t *listensoc
             pDataArray[i],				// argument to thread function 
             0,							// use default creation flags 
             &dwThreadIdArray[i]);		// returns the thread identifier
-
+				
 		if (hThreadArray[i] == NULL) 
         {
            log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory. Unable create thread");
            return MOSQ_ERR_NOMEM;
         }
-
+		
 		db->threadIds[i] = dwThreadIdArray[i];
 	}
 		
 	WaitForMultipleObjects(MAX_THREADS, hThreadArray, TRUE, INFINITE);
 
+	for(int i=0; i<listensock_count; i++)
+	{
+		TerminateThread(hListenerThreadArray[i], 0);
+		CloseHandle(hListenerThreadArray[i]);
+		if(pListenerDataArray[i] != NULL)
+        {
+            HeapFree(GetProcessHeap(), 0, pListenerDataArray[i]);
+            pListenerDataArray[i] = NULL;
+        }
+	}
+	free(pListenerDataArray);
+	free(hListenerThreadArray);
+			
 	for(int i=0; i<MAX_THREADS; i++)
     {
         CloseHandle(hThreadArray[i]);
@@ -716,7 +829,7 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reaso
 	if(context->state == mosq_cs_disconnected){
 		return;
 	}
-	WaitForSingleObject(db->socket_mutex, INFINITE);
+	
 #ifdef WITH_WEBSOCKETS
 	if(context->wsi){
 		if(context->state == mosq_cs_duplicate){
@@ -790,7 +903,6 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reaso
 #endif		
 		context__disconnect(db, context);
 	}
-	ReleaseMutex(db->socket_mutex);	
 }
 
 
@@ -807,7 +919,8 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 	int err;
 	socklen_t len;
 	int rc;
-
+	DWORD currentThreadId = GetCurrentThreadId();
+	
 #ifdef WITH_EPOLL
 	int i;
 	context = NULL;
@@ -817,8 +930,8 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 	}
 	for (i=0;i<1;i++) {
 #else
-	HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){
-		if(GetCurrentThreadId() != context->threadId)
+	HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){ // WRITE
+		if(currentThreadId != context->threadId)
 			continue;
 		if(context->pollfd_index < 0){
 			continue;
@@ -896,8 +1009,8 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 	}
 	for (i=0;i<1;i++) {
 #else
-	HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){ // pings handling
-		if(GetCurrentThreadId() != context->threadId)
+	HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){ // READ
+		if(currentThreadId != context->threadId)
 			continue;
 		if(context->pollfd_index < 0){
 			continue;
@@ -948,9 +1061,6 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 {
 	pmatdata arg = (pmatdata)lpParam;
 	struct mosquitto_db *db = arg->db;
-	mosq_sock_t *listensock = arg->listensock;
-	int listensock_count = arg->listensock_count;
-	int startIndex = arg->pollStartIndex;
 	int threadIndex = arg->threadIndex;		
 								
 #ifdef WITH_SYS_TREE
@@ -1043,25 +1153,22 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 	}
 #endif
 #endif
-	
+
+	DWORD currentThreadId = GetCurrentThreadId();
 	while(run){
-		if(threadIndex == 0)
-			context__free_disused(db);
+		context__free_disused(db);
 					
 #ifdef WITH_SYS_TREE
-		if(threadIndex == 0)
-		{
-			if(db->config->sys_interval > 0){
-				sys_tree__update(db, db->config->sys_interval, start_time);
-			}			
-		}
+		if(db->config->sys_interval > 0){
+			sys_tree__update(db, db->config->sys_interval, start_time);
+		}	
 #endif
 
 #ifndef WITH_EPOLL
 		memset(pollfds, -1, sizeof(struct pollfd)*pollfd_max);
 
 		pollfd_index = 0;
-		if(threadIndex == 0)
+		/*if(threadIndex == 0)
 		{
 			for(i=0; i<listensock_count; i++){
 				pollfds[pollfd_index].fd = listensock[i];
@@ -1069,7 +1176,7 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 				pollfds[pollfd_index].revents = 0;
 				pollfd_index++;
 			}
-		}
+		}*/
 		
 		
 #endif
@@ -1211,11 +1318,15 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 #endif
 
 		time_count = 0;
-		if(threadIndex > 0)
-		{
-			// WaitForSingleObject(db->socket_mutex, INFINITE);
-			HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){ // UT_hash_handle, like array, current item, tmp
-			if(GetCurrentThreadId() != context->threadId)
+		// WaitForSingleObject(db->socket_mutex, INFINITE);
+
+		/*unsigned int count = HASH_CNT(hh_sock, db->contexts_by_sock);
+		if(count > 0)
+			printf("there are %u sockets\n", count);*/
+
+		
+		HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){ // UT_hash_handle, like array, current item, tmp
+			if(currentThreadId != context->threadId)
 				continue;
 			if(time_count > 0){
 				time_count--;
@@ -1322,8 +1433,7 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 				}
 			}
 		} // HASH_ITER END 
-			// ReleaseMutex(db->socket_mutex);	
-		}
+		// ReleaseMutex(db->socket_mutex);
 		
 
 #ifndef WIN32
@@ -1388,9 +1498,8 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 				log__printf(NULL, MOSQ_LOG_ERR, "Error in poll: %s.", strerror(errno));
 			}
 		}else{
-			if(threadIndex > 0)
-				loop_handle_reads_writes(db, pollfds);
-			else
+			loop_handle_reads_writes(db, pollfds);
+			/*else
 			{
 				for(i=0; i<listensock_count; i++){ // first two listen sockets
 					if(pollfds[i].revents & (POLLIN | POLLPRI)){
@@ -1399,7 +1508,7 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 					}
 				}
 				continue;
-			}
+			}*/
 		}
 #endif
 		now = time(NULL);
@@ -1478,12 +1587,3 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 	
 }
 
-void read_write_thread()
-{
-	while(run)
-	{
-		
-	}		
-			
-			
-}

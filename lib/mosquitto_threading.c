@@ -110,4 +110,74 @@ int mosquitto_mutex_unlock(mosquitto_mutex *mutex) {
 	return 0;
 }
 
+int pthread_rwlock_init(pthread_rwlock_t *rwlock, const pthread_rwlockattr_t *attr)
+{
+    (void)attr;
+    if (rwlock == NULL)
+        return 1;
+    InitializeSRWLock(&(rwlock->lock));
+    rwlock->exclusive = false;
+    return 0;
+}
+
+int pthread_rwlock_destroy(pthread_rwlock_t *rwlock)
+{
+    (void)rwlock;
+	return 0;
+}
+
+int pthread_rwlock_rdlock(pthread_rwlock_t *rwlock)
+{
+    if (rwlock == NULL)
+        return 1;
+    AcquireSRWLockShared(&(rwlock->lock));
+	return 0;
+}
+
+int pthread_rwlock_tryrdlock(pthread_rwlock_t *rwlock)
+{
+    if (rwlock == NULL)
+        return 1;
+    return !TryAcquireSRWLockShared(&(rwlock->lock));
+}
+
+int pthread_rwlock_wrlock(pthread_rwlock_t *rwlock)
+{
+    if (rwlock == NULL)
+        return 1;
+    AcquireSRWLockExclusive(&(rwlock->lock));
+    rwlock->exclusive = true;
+
+	return 0;
+}
+
+int pthread_rwlock_trywrlock(pthread_rwlock_t  *rwlock)
+{
+    BOOLEAN ret;
+
+    if (rwlock == NULL)
+        return 1;
+
+    ret = TryAcquireSRWLockExclusive(&(rwlock->lock));
+    if (ret)
+        rwlock->exclusive = true;
+    return ret;
+}
+
+int pthread_rwlock_unlock(pthread_rwlock_t *rwlock)
+{
+    if (rwlock == NULL)
+        return 1;
+
+    if (rwlock->exclusive) {
+        rwlock->exclusive = false;
+        ReleaseSRWLockExclusive(&(rwlock->lock));
+    } else {
+        ReleaseSRWLockShared(&(rwlock->lock));
+    }
+	return 0;
+}
+
+
+
 #endif

@@ -4,6 +4,7 @@
 #ifndef WIN32
 #  include <pthread.h>
 #else
+#  include <stdbool.h>
 #  include <windows.h>
 #endif
 
@@ -13,6 +14,11 @@ typedef pthread_t mosquitto_thread_handle;
 #else
 typedef CRITICAL_SECTION mosquitto_mutex;
 typedef HANDLE mosquitto_thread_handle;
+typedef void pthread_rwlockattr_t;
+typedef struct {
+    SRWLOCK lock;
+    bool    exclusive;
+} pthread_rwlock_t;
 #endif
 
 int mosquitto_thread_create(mosquitto_thread_handle *thread, void *(*mosquitto_thread_function)(void *), void *arg);
@@ -25,4 +31,11 @@ int mosquitto_mutex_destroy(mosquitto_mutex *mutex);
 int mosquitto_mutex_lock(mosquitto_mutex *mutex);
 int mosquitto_mutex_unlock(mosquitto_mutex *mutex);
 
+int pthread_rwlock_init(pthread_rwlock_t *rwlock, const pthread_rwlockattr_t *attr);
+int pthread_rwlock_destroy(pthread_rwlock_t *rwlock);
+int pthread_rwlock_rdlock(pthread_rwlock_t *rwlock);
+int pthread_rwlock_tryrdlock(pthread_rwlock_t *rwlock);
+int pthread_rwlock_wrlock(pthread_rwlock_t *rwlock);
+int pthread_rwlock_trywrlock(pthread_rwlock_t  *rwlock);
+int pthread_rwlock_unlock(pthread_rwlock_t *rwlock);
 #endif

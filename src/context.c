@@ -89,8 +89,8 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock)
 #endif
 
 	if((int)context->sock >= 0){
-		context->threadIndex = rand() % (MAX_THREADS - 1) + 1;
-		context->threadId = db->threadIds[context->threadIndex];
+		context->threadIndex = -1;
+		context->threadId = GetCurrentThreadId();
 		HASH_ADD(hh_sock, db->contexts_by_sock, sock, sizeof(context->sock), context);
 	}
 	return context;

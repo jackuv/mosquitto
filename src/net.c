@@ -97,7 +97,7 @@ static void net__print_error(int log, const char *format_str)
 }
 
 
-int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
+struct mosquitto* net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 {
 	int i;
 	int j;
@@ -138,7 +138,7 @@ int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 			log__printf(NULL, MOSQ_LOG_WARNING,
 					"Unable to accept new connection, system socket count has been exceeded. Try increasing \"ulimit -n\" or equivalent.");
 		}
-		return -1;
+		return NULL;
 	}
 
 	G_SOCKET_CONNECTIONS_INC();
@@ -173,8 +173,14 @@ int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 	new_context = context__init(db, new_sock);
 	if(!new_context){
 		COMPAT_CLOSE(new_sock);
-		return -1;
+		return NULL;
 	}
+
+	new_context->deleteRequired++;	
+	if(new_context->deleteRequired % 100 == 0)
+		log__printf(NULL, MOSQ_LOG_NOTICE, "OK");
+	
+		
 	for(i=0; i<db->config->listener_count; i++){
 		for(j=0; j<db->config->listeners[i].sock_count; j++){
 			if(db->config->listeners[i].socks[j] == listensock){
@@ -186,7 +192,7 @@ int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 	}
 	if(!new_context->listener){
 		context__cleanup(db, new_context, true);
-		return -1;
+		return NULL;
 	}
 
 	if(new_context->listener->max_connections > 0 && new_context->listener->client_count > new_context->listener->max_connections){
@@ -194,7 +200,7 @@ int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 			log__printf(NULL, MOSQ_LOG_NOTICE, "Client connection from %s denied: max_connections exceeded.", new_context->address);
 		}
 		context__cleanup(db, new_context, true);
-		return -1;
+		return NULL;
 	}
 
 #ifdef WITH_TLS
@@ -203,7 +209,7 @@ int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 		new_context->ssl = SSL_new(new_context->listener->ssl_ctx);
 		if(!new_context->ssl){
 			context__cleanup(db, new_context, true);
-			return -1;
+			return NULL;
 		}
 		SSL_set_ex_data(new_context->ssl, tls_ex_index_context, new_context);
 		SSL_set_ex_data(new_context->ssl, tls_ex_index_listener, new_context->listener);
@@ -229,7 +235,7 @@ int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 					}
 				}
 				context__cleanup(db, new_context, true);
-				return -1;
+				return NULL;
 			}
 		}
 	}
@@ -239,7 +245,8 @@ int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
 		log__printf(NULL, MOSQ_LOG_NOTICE, "New connection from %s on port %d.", new_context->address, new_context->listener->port);
 	}
 
-	return new_sock;
+	// return new_sock;
+	return new_context;	
 }
 
 #ifdef WITH_TLS

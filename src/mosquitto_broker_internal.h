@@ -73,7 +73,9 @@ Contributors:
 
 #define TOPIC_HIERARCHY_LIMIT 200
 
-#define MAX_THREADS 64
+#define MAX_THREADS 1
+
+
 /* ========================================
  * UHPA data types
  * ======================================== */
@@ -434,6 +436,11 @@ struct mosquitto_db{
 	struct mosquitto *contexts_by_id;
 	struct mosquitto *contexts_by_sock;
 	struct mosquitto *contexts_for_free;
+
+	struct mosquitto *contexts_by_sock0;
+	struct mosquitto *contexts_by_sock1;
+	struct mosquitto *contexts_by_sock2;
+	struct mosquitto *contexts_by_sock3;
 #ifdef WITH_BRIDGE
 	struct mosquitto **bridges;
 #endif
@@ -593,7 +600,7 @@ int send__auth(struct mosquitto_db *db, struct mosquitto *context, int reason_co
  * ============================================================ */
 void net__broker_init(void);
 void net__broker_cleanup(void);
-int net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock);
+struct mosquitto* net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock);
 int net__socket_listen(struct mosquitto__listener *listener);
 int net__socket_get_address(mosq_sock_t sock, char *buf, int len);
 int net__tls_load_verify(struct mosquitto__listener *listener);
