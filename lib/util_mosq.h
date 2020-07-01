@@ -47,5 +47,4 @@ void util__increment_send_quota(struct mosquitto *mosq);
 void util__decrement_receive_quota(struct mosquitto *mosq);
 void util__decrement_send_quota(struct mosquitto *mosq);
 
-
 #endif

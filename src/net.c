@@ -147,6 +147,10 @@ struct mosquitto* net__socket_accept(struct mosquitto_db *db, mosq_sock_t listen
 		return INVALID_SOCKET;
 	}
 
+	/*if(net__socket_nonblock(&new_sock)){
+		return INVALID_SOCKET;
+	}*/	
+
 #ifdef WITH_WRAP
 	/* Use tcpd / libwrap to determine whether a connection is allowed. */
 	request_init(&wrap_req, RQ_FILE, new_sock, RQ_DAEMON, "mosquitto", 0);
@@ -176,11 +180,7 @@ struct mosquitto* net__socket_accept(struct mosquitto_db *db, mosq_sock_t listen
 		return NULL;
 	}
 
-	new_context->deleteRequired++;	
-	if(new_context->deleteRequired % 100 == 0)
-		log__printf(NULL, MOSQ_LOG_NOTICE, "OK");
-	
-		
+			
 	for(i=0; i<db->config->listener_count; i++){
 		for(j=0; j<db->config->listeners[i].sock_count; j++){
 			if(db->config->listeners[i].socks[j] == listensock){

@@ -73,7 +73,7 @@ Contributors:
 
 #define TOPIC_HIERARCHY_LIMIT 200
 
-#define MAX_THREADS 1
+#define MAX_THREADS 4
 
 
 /* ========================================
@@ -121,6 +121,8 @@ Contributors:
  * sizeof(void*)+malloc_usable_size(malloc(1)) are a safe value that should
  * reduce calls to malloc without increasing memory usage at all.
  */
+
+
 #define MOSQ_PAYLOAD_UNION_SIZE 8
 typedef union {
 	void *ptr;
@@ -162,6 +164,8 @@ typedef int (*FUNC_auth_plugin_security_cleanup_v2)(void *, struct mosquitto_aut
 typedef int (*FUNC_auth_plugin_acl_check_v2)(void *, const char *, const char *, const char *, int);
 typedef int (*FUNC_auth_plugin_unpwd_check_v2)(void *, const char *, const char *);
 typedef int (*FUNC_auth_plugin_psk_key_get_v2)(void *, const char *, const char *, char *, int);
+
+
 
 
 enum mosquitto_msg_origin{
@@ -433,10 +437,15 @@ struct mosquitto_db{
 	struct mosquitto__subhier *subs;
 	struct mosquitto__unpwd *unpwd;
 	struct mosquitto__unpwd *psk_id;
-	struct mosquitto *contexts_by_id;
-	struct mosquitto *contexts_by_sock;
+	// struct mosquitto *contexts_by_id;
+	// struct mosquitto *contexts_by_sock;
 	struct mosquitto *contexts_for_free;
 
+	struct mosquitto *contexts_by_id0;
+	struct mosquitto *contexts_by_id1;
+	struct mosquitto *contexts_by_id2;
+	struct mosquitto *contexts_by_id3;
+	
 	struct mosquitto *contexts_by_sock0;
 	struct mosquitto *contexts_by_sock1;
 	struct mosquitto *contexts_by_sock2;
@@ -767,3 +776,4 @@ void will_delay__remove(struct mosquitto *mosq);
 
 #endif
 
+int getThreadIndex(struct mosquitto_db *db);

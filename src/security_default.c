@@ -600,6 +600,7 @@ static void acl__cleanup_single(struct mosquitto__security_options *security_opt
 
 static int acl__cleanup(struct mosquitto_db *db, bool reload)
 {
+	int threadIndex = getThreadIndex(db); 
 	struct mosquitto *context, *ctxt_tmp;
 	int i;
 
@@ -613,10 +614,31 @@ static int acl__cleanup(struct mosquitto_db *db, bool reload)
 	 * is called if we are reloading the config. If this is not done, all 
 	 * access will be denied to currently connected clients.
 	 */
-	HASH_ITER(hh_id, db->contexts_by_id, context, ctxt_tmp){
-		context->acl_list = NULL;
+	if(threadIndex == 0)
+	{
+		HASH_ITER(hh_id0, db->contexts_by_id0, context, ctxt_tmp){
+			context->acl_list = NULL;
+		}
 	}
-
+	else if(threadIndex == 1)
+	{
+		HASH_ITER(hh_id1, db->contexts_by_id1, context, ctxt_tmp){
+			context->acl_list = NULL;
+		}
+	}
+	else if(threadIndex == 2)
+	{
+		HASH_ITER(hh_id2, db->contexts_by_id2, context, ctxt_tmp){
+			context->acl_list = NULL;
+		}
+	}
+	else if(threadIndex == 3)
+	{
+		HASH_ITER(hh_id3, db->contexts_by_id3, context, ctxt_tmp){
+			context->acl_list = NULL;
+		}
+	}
+		
 	if(db->config->per_listener_settings){
 		for(i=0; i<db->config->listener_count; i++){
 			acl__cleanup_single(&db->config->listeners[i].security_options);
@@ -990,6 +1012,7 @@ static void security__disconnect_auth(struct mosquitto_db *db, struct mosquitto 
  */
 int mosquitto_security_apply_default(struct mosquitto_db *db)
 {
+	int threadIndex = getThreadIndex(db);
 	struct mosquitto *context, *ctxt_tmp;
 	struct mosquitto__acl_user *acl_user_tail;
 	bool allow_anonymous;
@@ -1024,7 +1047,9 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 	}
 #endif
 
-	HASH_ITER(hh_id, db->contexts_by_id, context, ctxt_tmp){
+	if(threadIndex == 0)
+	{
+		HASH_ITER(hh_id0, db->contexts_by_id1, context, ctxt_tmp){
 		/* Check for anonymous clients when allow_anonymous is false */
 		if(db->config->per_listener_settings){
 			if(context->listener){
@@ -1193,6 +1218,524 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 			}
 		}
 	}
+	}
+	else if(threadIndex == 1)
+	{
+		HASH_ITER(hh_id1, db->contexts_by_id1, context, ctxt_tmp){
+		/* Check for anonymous clients when allow_anonymous is false */
+		if(db->config->per_listener_settings){
+			if(context->listener){
+				allow_anonymous = context->listener->security_options.allow_anonymous;
+			}else{
+				/* Client not currently connected, so defer judgement until it does connect */
+				allow_anonymous = true;
+			}
+		}else{
+			allow_anonymous = db->config->security_options.allow_anonymous;
+		}
+
+		if(!allow_anonymous && !context->username){
+			mosquitto__set_state(context, mosq_cs_disconnecting);
+			do_disconnect(db, context, MOSQ_ERR_AUTH);
+			continue;
+		}
+
+		/* Check for connected clients that are no longer authorised */
+#ifdef WITH_TLS
+		if(context->listener && context->listener->ssl_ctx && (context->listener->use_identity_as_username || context->listener->use_subject_as_username)){
+			/* Client must have either a valid certificate, or valid PSK used as a username. */
+			if(!context->ssl){
+				if(context->protocol == mosq_p_mqtt5){
+					send__disconnect(context, MQTT_RC_ADMINISTRATIVE_ACTION, NULL);
+				}
+				mosquitto__set_state(context, mosq_cs_disconnecting);
+				do_disconnect(db, context, MOSQ_ERR_AUTH);
+				continue;
+			}
+#ifdef FINAL_WITH_TLS_PSK
+			if(context->listener->psk_hint){
+				/* Client should have provided an identity to get this far. */
+				if(!context->username){
+					security__disconnect_auth(db, context);
+					continue;
+				}
+			}else
+#endif /* FINAL_WITH_TLS_PSK */
+			{
+				/* Free existing credentials and then recover them. */
+				mosquitto__free(context->username);
+				context->username = NULL;
+				mosquitto__free(context->password);
+				context->password = NULL;
+
+				client_cert = SSL_get_peer_certificate(context->ssl);
+				if(!client_cert){
+					security__disconnect_auth(db, context);
+					continue;
+				}
+				name = X509_get_subject_name(client_cert);
+				if(!name){
+					X509_free(client_cert);
+					client_cert = NULL;
+					security__disconnect_auth(db, context);
+					continue;
+				}
+				if (context->listener->use_identity_as_username) { /* use_identity_as_username */
+					i = X509_NAME_get_index_by_NID(name, NID_commonName, -1);
+					if(i == -1){
+						X509_free(client_cert);
+						client_cert = NULL;
+						security__disconnect_auth(db, context);
+						continue;
+					}
+					name_entry = X509_NAME_get_entry(name, i);
+					if(name_entry){
+						name_asn1 = X509_NAME_ENTRY_get_data(name_entry);
+						if (name_asn1 == NULL) {
+							X509_free(client_cert);
+							client_cert = NULL;
+							security__disconnect_auth(db, context);
+							continue;
+						}
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+						context->username = mosquitto__strdup((char *) ASN1_STRING_data(name_asn1));
+#else
+						context->username = mosquitto__strdup((char *) ASN1_STRING_get0_data(name_asn1));
+#endif
+						if(!context->username){
+							X509_free(client_cert);
+							client_cert = NULL;
+							security__disconnect_auth(db, context);
+							continue;
+						}
+						/* Make sure there isn't an embedded NUL character in the CN */
+						if ((size_t)ASN1_STRING_length(name_asn1) != strlen(context->username)) {
+							X509_free(client_cert);
+							client_cert = NULL;
+							security__disconnect_auth(db, context);
+							continue;
+						}
+					}
+				} else { /* use_subject_as_username */
+					subject_bio = BIO_new(BIO_s_mem());
+					X509_NAME_print_ex(subject_bio, X509_get_subject_name(client_cert), 0, XN_FLAG_RFC2253);
+					data_start = NULL;
+					name_length = BIO_get_mem_data(subject_bio, &data_start);
+					subject = mosquitto__malloc(sizeof(char)*name_length+1);
+					if(!subject){
+						BIO_free(subject_bio);
+						X509_free(client_cert);
+						client_cert = NULL;
+						security__disconnect_auth(db, context);
+						continue;
+					}
+					memcpy(subject, data_start, name_length);
+					subject[name_length] = '\0';
+					BIO_free(subject_bio);
+					context->username = subject;
+				}
+				if(!context->username){
+					X509_free(client_cert);
+					client_cert = NULL;
+					security__disconnect_auth(db, context);
+					continue;
+				}
+				X509_free(client_cert);
+				client_cert = NULL;
+			}
+		}else
+#endif
+		{
+			/* Username/password check only if the identity/subject check not used */
+			if(mosquitto_unpwd_check(db, context, context->username, context->password) != MOSQ_ERR_SUCCESS){
+				mosquitto__set_state(context, mosq_cs_disconnecting);
+				do_disconnect(db, context, MOSQ_ERR_AUTH);
+				continue;
+			}
+		}
+
+
+		/* Check for ACLs and apply to user. */
+		if(db->config->per_listener_settings){
+			if(context->listener){
+				security_opts = &context->listener->security_options;
+			}else{
+				if(context->state != mosq_cs_active){
+					mosquitto__set_state(context, mosq_cs_disconnecting);
+					do_disconnect(db, context, MOSQ_ERR_AUTH);
+					continue;
+				}
+			}
+		}else{
+			security_opts = &db->config->security_options;
+		}
+
+		if(security_opts && security_opts->acl_list){
+			acl_user_tail = security_opts->acl_list;
+			while(acl_user_tail){
+				if(acl_user_tail->username){
+					if(context->username){
+						if(!strcmp(acl_user_tail->username, context->username)){
+							context->acl_list = acl_user_tail;
+							break;
+						}
+					}
+				}else{
+					if(!context->username){
+						context->acl_list = acl_user_tail;
+						break;
+					}
+				}
+				acl_user_tail = acl_user_tail->next;
+			}
+		}
+	}
+	}
+	else if(threadIndex == 2)
+	{
+		HASH_ITER(hh_id2, db->contexts_by_id2, context, ctxt_tmp){
+		/* Check for anonymous clients when allow_anonymous is false */
+		if(db->config->per_listener_settings){
+			if(context->listener){
+				allow_anonymous = context->listener->security_options.allow_anonymous;
+			}else{
+				/* Client not currently connected, so defer judgement until it does connect */
+				allow_anonymous = true;
+			}
+		}else{
+			allow_anonymous = db->config->security_options.allow_anonymous;
+		}
+
+		if(!allow_anonymous && !context->username){
+			mosquitto__set_state(context, mosq_cs_disconnecting);
+			do_disconnect(db, context, MOSQ_ERR_AUTH);
+			continue;
+		}
+
+		/* Check for connected clients that are no longer authorised */
+#ifdef WITH_TLS
+		if(context->listener && context->listener->ssl_ctx && (context->listener->use_identity_as_username || context->listener->use_subject_as_username)){
+			/* Client must have either a valid certificate, or valid PSK used as a username. */
+			if(!context->ssl){
+				if(context->protocol == mosq_p_mqtt5){
+					send__disconnect(context, MQTT_RC_ADMINISTRATIVE_ACTION, NULL);
+				}
+				mosquitto__set_state(context, mosq_cs_disconnecting);
+				do_disconnect(db, context, MOSQ_ERR_AUTH);
+				continue;
+			}
+#ifdef FINAL_WITH_TLS_PSK
+			if(context->listener->psk_hint){
+				/* Client should have provided an identity to get this far. */
+				if(!context->username){
+					security__disconnect_auth(db, context);
+					continue;
+				}
+			}else
+#endif /* FINAL_WITH_TLS_PSK */
+			{
+				/* Free existing credentials and then recover them. */
+				mosquitto__free(context->username);
+				context->username = NULL;
+				mosquitto__free(context->password);
+				context->password = NULL;
+
+				client_cert = SSL_get_peer_certificate(context->ssl);
+				if(!client_cert){
+					security__disconnect_auth(db, context);
+					continue;
+				}
+				name = X509_get_subject_name(client_cert);
+				if(!name){
+					X509_free(client_cert);
+					client_cert = NULL;
+					security__disconnect_auth(db, context);
+					continue;
+				}
+				if (context->listener->use_identity_as_username) { /* use_identity_as_username */
+					i = X509_NAME_get_index_by_NID(name, NID_commonName, -1);
+					if(i == -1){
+						X509_free(client_cert);
+						client_cert = NULL;
+						security__disconnect_auth(db, context);
+						continue;
+					}
+					name_entry = X509_NAME_get_entry(name, i);
+					if(name_entry){
+						name_asn1 = X509_NAME_ENTRY_get_data(name_entry);
+						if (name_asn1 == NULL) {
+							X509_free(client_cert);
+							client_cert = NULL;
+							security__disconnect_auth(db, context);
+							continue;
+						}
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+						context->username = mosquitto__strdup((char *) ASN1_STRING_data(name_asn1));
+#else
+						context->username = mosquitto__strdup((char *) ASN1_STRING_get0_data(name_asn1));
+#endif
+						if(!context->username){
+							X509_free(client_cert);
+							client_cert = NULL;
+							security__disconnect_auth(db, context);
+							continue;
+						}
+						/* Make sure there isn't an embedded NUL character in the CN */
+						if ((size_t)ASN1_STRING_length(name_asn1) != strlen(context->username)) {
+							X509_free(client_cert);
+							client_cert = NULL;
+							security__disconnect_auth(db, context);
+							continue;
+						}
+					}
+				} else { /* use_subject_as_username */
+					subject_bio = BIO_new(BIO_s_mem());
+					X509_NAME_print_ex(subject_bio, X509_get_subject_name(client_cert), 0, XN_FLAG_RFC2253);
+					data_start = NULL;
+					name_length = BIO_get_mem_data(subject_bio, &data_start);
+					subject = mosquitto__malloc(sizeof(char)*name_length+1);
+					if(!subject){
+						BIO_free(subject_bio);
+						X509_free(client_cert);
+						client_cert = NULL;
+						security__disconnect_auth(db, context);
+						continue;
+					}
+					memcpy(subject, data_start, name_length);
+					subject[name_length] = '\0';
+					BIO_free(subject_bio);
+					context->username = subject;
+				}
+				if(!context->username){
+					X509_free(client_cert);
+					client_cert = NULL;
+					security__disconnect_auth(db, context);
+					continue;
+				}
+				X509_free(client_cert);
+				client_cert = NULL;
+			}
+		}else
+#endif
+		{
+			/* Username/password check only if the identity/subject check not used */
+			if(mosquitto_unpwd_check(db, context, context->username, context->password) != MOSQ_ERR_SUCCESS){
+				mosquitto__set_state(context, mosq_cs_disconnecting);
+				do_disconnect(db, context, MOSQ_ERR_AUTH);
+				continue;
+			}
+		}
+
+
+		/* Check for ACLs and apply to user. */
+		if(db->config->per_listener_settings){
+			if(context->listener){
+				security_opts = &context->listener->security_options;
+			}else{
+				if(context->state != mosq_cs_active){
+					mosquitto__set_state(context, mosq_cs_disconnecting);
+					do_disconnect(db, context, MOSQ_ERR_AUTH);
+					continue;
+				}
+			}
+		}else{
+			security_opts = &db->config->security_options;
+		}
+
+		if(security_opts && security_opts->acl_list){
+			acl_user_tail = security_opts->acl_list;
+			while(acl_user_tail){
+				if(acl_user_tail->username){
+					if(context->username){
+						if(!strcmp(acl_user_tail->username, context->username)){
+							context->acl_list = acl_user_tail;
+							break;
+						}
+					}
+				}else{
+					if(!context->username){
+						context->acl_list = acl_user_tail;
+						break;
+					}
+				}
+				acl_user_tail = acl_user_tail->next;
+			}
+		}
+	}
+	}
+	else if(threadIndex == 3)
+	{
+		HASH_ITER(hh_id3, db->contexts_by_id3, context, ctxt_tmp){
+		/* Check for anonymous clients when allow_anonymous is false */
+		if(db->config->per_listener_settings){
+			if(context->listener){
+				allow_anonymous = context->listener->security_options.allow_anonymous;
+			}else{
+				/* Client not currently connected, so defer judgement until it does connect */
+				allow_anonymous = true;
+			}
+		}else{
+			allow_anonymous = db->config->security_options.allow_anonymous;
+		}
+
+		if(!allow_anonymous && !context->username){
+			mosquitto__set_state(context, mosq_cs_disconnecting);
+			do_disconnect(db, context, MOSQ_ERR_AUTH);
+			continue;
+		}
+
+		/* Check for connected clients that are no longer authorised */
+#ifdef WITH_TLS
+		if(context->listener && context->listener->ssl_ctx && (context->listener->use_identity_as_username || context->listener->use_subject_as_username)){
+			/* Client must have either a valid certificate, or valid PSK used as a username. */
+			if(!context->ssl){
+				if(context->protocol == mosq_p_mqtt5){
+					send__disconnect(context, MQTT_RC_ADMINISTRATIVE_ACTION, NULL);
+				}
+				mosquitto__set_state(context, mosq_cs_disconnecting);
+				do_disconnect(db, context, MOSQ_ERR_AUTH);
+				continue;
+			}
+#ifdef FINAL_WITH_TLS_PSK
+			if(context->listener->psk_hint){
+				/* Client should have provided an identity to get this far. */
+				if(!context->username){
+					security__disconnect_auth(db, context);
+					continue;
+				}
+			}else
+#endif /* FINAL_WITH_TLS_PSK */
+			{
+				/* Free existing credentials and then recover them. */
+				mosquitto__free(context->username);
+				context->username = NULL;
+				mosquitto__free(context->password);
+				context->password = NULL;
+
+				client_cert = SSL_get_peer_certificate(context->ssl);
+				if(!client_cert){
+					security__disconnect_auth(db, context);
+					continue;
+				}
+				name = X509_get_subject_name(client_cert);
+				if(!name){
+					X509_free(client_cert);
+					client_cert = NULL;
+					security__disconnect_auth(db, context);
+					continue;
+				}
+				if (context->listener->use_identity_as_username) { /* use_identity_as_username */
+					i = X509_NAME_get_index_by_NID(name, NID_commonName, -1);
+					if(i == -1){
+						X509_free(client_cert);
+						client_cert = NULL;
+						security__disconnect_auth(db, context);
+						continue;
+					}
+					name_entry = X509_NAME_get_entry(name, i);
+					if(name_entry){
+						name_asn1 = X509_NAME_ENTRY_get_data(name_entry);
+						if (name_asn1 == NULL) {
+							X509_free(client_cert);
+							client_cert = NULL;
+							security__disconnect_auth(db, context);
+							continue;
+						}
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+						context->username = mosquitto__strdup((char *) ASN1_STRING_data(name_asn1));
+#else
+						context->username = mosquitto__strdup((char *) ASN1_STRING_get0_data(name_asn1));
+#endif
+						if(!context->username){
+							X509_free(client_cert);
+							client_cert = NULL;
+							security__disconnect_auth(db, context);
+							continue;
+						}
+						/* Make sure there isn't an embedded NUL character in the CN */
+						if ((size_t)ASN1_STRING_length(name_asn1) != strlen(context->username)) {
+							X509_free(client_cert);
+							client_cert = NULL;
+							security__disconnect_auth(db, context);
+							continue;
+						}
+					}
+				} else { /* use_subject_as_username */
+					subject_bio = BIO_new(BIO_s_mem());
+					X509_NAME_print_ex(subject_bio, X509_get_subject_name(client_cert), 0, XN_FLAG_RFC2253);
+					data_start = NULL;
+					name_length = BIO_get_mem_data(subject_bio, &data_start);
+					subject = mosquitto__malloc(sizeof(char)*name_length+1);
+					if(!subject){
+						BIO_free(subject_bio);
+						X509_free(client_cert);
+						client_cert = NULL;
+						security__disconnect_auth(db, context);
+						continue;
+					}
+					memcpy(subject, data_start, name_length);
+					subject[name_length] = '\0';
+					BIO_free(subject_bio);
+					context->username = subject;
+				}
+				if(!context->username){
+					X509_free(client_cert);
+					client_cert = NULL;
+					security__disconnect_auth(db, context);
+					continue;
+				}
+				X509_free(client_cert);
+				client_cert = NULL;
+			}
+		}else
+#endif
+		{
+			/* Username/password check only if the identity/subject check not used */
+			if(mosquitto_unpwd_check(db, context, context->username, context->password) != MOSQ_ERR_SUCCESS){
+				mosquitto__set_state(context, mosq_cs_disconnecting);
+				do_disconnect(db, context, MOSQ_ERR_AUTH);
+				continue;
+			}
+		}
+
+
+		/* Check for ACLs and apply to user. */
+		if(db->config->per_listener_settings){
+			if(context->listener){
+				security_opts = &context->listener->security_options;
+			}else{
+				if(context->state != mosq_cs_active){
+					mosquitto__set_state(context, mosq_cs_disconnecting);
+					do_disconnect(db, context, MOSQ_ERR_AUTH);
+					continue;
+				}
+			}
+		}else{
+			security_opts = &db->config->security_options;
+		}
+
+		if(security_opts && security_opts->acl_list){
+			acl_user_tail = security_opts->acl_list;
+			while(acl_user_tail){
+				if(acl_user_tail->username){
+					if(context->username){
+						if(!strcmp(acl_user_tail->username, context->username)){
+							context->acl_list = acl_user_tail;
+							break;
+						}
+					}
+				}else{
+					if(!context->username){
+						context->acl_list = acl_user_tail;
+						break;
+					}
+				}
+				acl_user_tail = acl_user_tail->next;
+			}
+		}
+	}
+	}
+	
 	return MOSQ_ERR_SUCCESS;
 }
 

@@ -45,28 +45,94 @@ static int persist__restore_sub(struct mosquitto_db *db, const char *client_id, 
 
 static struct mosquitto *persist__find_or_add_context(struct mosquitto_db *db, const char *client_id, uint16_t last_mid)
 {
+	int threadIndex = getThreadIndex(db);
 	struct mosquitto *context;
 
 	if(!client_id) return NULL;
 
 	context = NULL;
-	HASH_FIND(hh_id, db->contexts_by_id, client_id, strlen(client_id), context);
-	if(!context){
-		context = context__init(db, -1);
-		if(!context) return NULL;
-		context->id = mosquitto__strdup(client_id);
-		if(!context->id){
-			mosquitto__free(context);
-			return NULL;
+	   
+	if(threadIndex == 0)
+	{
+		HASH_FIND(hh_id0, db->contexts_by_id0, client_id, strlen(client_id), context);
+		if(!context){
+			context = context__init(db, -1);
+			if(!context) return NULL;
+			context->id = mosquitto__strdup(client_id);
+			if(!context->id){
+				mosquitto__free(context);
+				return NULL;
+			}
+
+			context->clean_start = false;
+
+			HASH_ADD_KEYPTR(hh_id0, db->contexts_by_id0, context->id, strlen(context->id), context);
 		}
-
-		context->clean_start = false;
-
-		HASH_ADD_KEYPTR(hh_id, db->contexts_by_id, context->id, strlen(context->id), context);
+		if(last_mid){
+			context->last_mid = last_mid;
+		}
 	}
-	if(last_mid){
-		context->last_mid = last_mid;
+	else if(threadIndex == 1)
+	{
+		HASH_FIND(hh_id1, db->contexts_by_id1, client_id, strlen(client_id), context);
+		if(!context){
+			context = context__init(db, -1);
+			if(!context) return NULL;
+			context->id = mosquitto__strdup(client_id);
+			if(!context->id){
+				mosquitto__free(context);
+				return NULL;
+			}
+
+			context->clean_start = false;
+
+			HASH_ADD_KEYPTR(hh_id1, db->contexts_by_id1, context->id, strlen(context->id), context);
+		}
+		if(last_mid){
+			context->last_mid = last_mid;
+		}
 	}
+	else if(threadIndex == 2)
+	{
+		HASH_FIND(hh_id2, db->contexts_by_id2, client_id, strlen(client_id), context);
+		if(!context){
+			context = context__init(db, -1);
+			if(!context) return NULL;
+			context->id = mosquitto__strdup(client_id);
+			if(!context->id){
+				mosquitto__free(context);
+				return NULL;
+			}
+
+			context->clean_start = false;
+
+			HASH_ADD_KEYPTR(hh_id2, db->contexts_by_id2, context->id, strlen(context->id), context);
+		}
+		if(last_mid){
+			context->last_mid = last_mid;
+		}
+	}
+	else if(threadIndex == 3)
+	{
+		HASH_FIND(hh_id3, db->contexts_by_id3, client_id, strlen(client_id), context);
+		if(!context){
+			context = context__init(db, -1);
+			if(!context) return NULL;
+			context->id = mosquitto__strdup(client_id);
+			if(!context->id){
+				mosquitto__free(context);
+				return NULL;
+			}
+
+			context->clean_start = false;
+
+			HASH_ADD_KEYPTR(hh_id3, db->contexts_by_id3, context->id, strlen(context->id), context);
+		}
+		if(last_mid){
+			context->last_mid = last_mid;
+		}
+	}
+
 	return context;
 }
 

@@ -376,7 +376,7 @@ int main(int argc, char *argv[])
 #endif
 
 	run = 1;
-	rc = mosquitto_main_loop(&int_db, listensock, listensock_count);
+	rc = mosquitto_main_loop_threaded(&int_db, listensock, listensock_count);
 
 	log__printf(NULL, MOSQ_LOG_INFO, "mosquitto version %s terminating", VERSION);
 
@@ -392,9 +392,19 @@ int main(int argc, char *argv[])
 	/* FIXME - this isn't quite right, all wills with will delay zero should be
 	 * sent now, but those with positive will delay should be persisted and
 	 * restored, pending the client reconnecting in time. */
-	HASH_ITER(hh_id, int_db.contexts_by_id, ctxt, ctxt_tmp){
+	HASH_ITER(hh_id0, int_db.contexts_by_id0, ctxt, ctxt_tmp){
 		context__send_will(&int_db, ctxt);
 	}
+	HASH_ITER(hh_id1, int_db.contexts_by_id1, ctxt, ctxt_tmp){
+		context__send_will(&int_db, ctxt);
+	}
+	HASH_ITER(hh_id2, int_db.contexts_by_id2, ctxt, ctxt_tmp){
+		context__send_will(&int_db, ctxt);
+	}
+	HASH_ITER(hh_id3, int_db.contexts_by_id3, ctxt, ctxt_tmp){
+		context__send_will(&int_db, ctxt);
+	}
+	
 	will_delay__send_all(&int_db);
 
 #ifdef WITH_PERSISTENCE
@@ -404,7 +414,7 @@ int main(int argc, char *argv[])
 #endif
 	session_expiry__remove_all(&int_db);
 
-	HASH_ITER(hh_id, int_db.contexts_by_id, ctxt, ctxt_tmp){
+	HASH_ITER(hh_id0, int_db.contexts_by_id0, ctxt, ctxt_tmp){
 #ifdef WITH_WEBSOCKETS
 		if(!ctxt->wsi){
 			context__cleanup(&int_db, ctxt, true);
@@ -413,7 +423,48 @@ int main(int argc, char *argv[])
 		context__cleanup(&int_db, ctxt, true);
 #endif
 	}
-	HASH_ITER(hh_sock, int_db.contexts_by_sock, ctxt, ctxt_tmp){
+
+	HASH_ITER(hh_id1, int_db.contexts_by_id1, ctxt, ctxt_tmp){
+#ifdef WITH_WEBSOCKETS
+		if(!ctxt->wsi){
+			context__cleanup(&int_db, ctxt, true);
+		}
+#else
+		context__cleanup(&int_db, ctxt, true);
+#endif
+	}
+
+	HASH_ITER(hh_id2, int_db.contexts_by_id2, ctxt, ctxt_tmp){
+#ifdef WITH_WEBSOCKETS
+		if(!ctxt->wsi){
+			context__cleanup(&int_db, ctxt, true);
+		}
+#else
+		context__cleanup(&int_db, ctxt, true);
+#endif
+	}
+
+	HASH_ITER(hh_id3, int_db.contexts_by_id3, ctxt, ctxt_tmp){
+#ifdef WITH_WEBSOCKETS
+		if(!ctxt->wsi){
+			context__cleanup(&int_db, ctxt, true);
+		}
+#else
+		context__cleanup(&int_db, ctxt, true);
+#endif
+	}
+	
+	
+	HASH_ITER(hh_sock0, int_db.contexts_by_sock0, ctxt, ctxt_tmp){
+		context__cleanup(&int_db, ctxt, true);
+	}
+	HASH_ITER(hh_sock1, int_db.contexts_by_sock1, ctxt, ctxt_tmp){
+		context__cleanup(&int_db, ctxt, true);
+	}
+	HASH_ITER(hh_sock2, int_db.contexts_by_sock2, ctxt, ctxt_tmp){
+		context__cleanup(&int_db, ctxt, true);
+	}
+	HASH_ITER(hh_sock3, int_db.contexts_by_sock3, ctxt, ctxt_tmp){
 		context__cleanup(&int_db, ctxt, true);
 	}
 #ifdef WITH_BRIDGE

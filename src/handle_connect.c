@@ -170,6 +170,7 @@ int http_get_request(const char* fmtUrl, const char* id, const char* user, const
 
 int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, void *auth_data_out, uint16_t auth_data_out_len)
 {
+	int threadIndex = getThreadIndex(db);
 	struct mosquitto *found_context;
 	struct mosquitto__subleaf *leaf;
 	mosquitto_property *connack_props = NULL;
@@ -178,7 +179,27 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 	int rc;
 
 	/* Find if this client already has an entry. This must be done *after* any security checks. */
-	HASH_FIND(hh_id, db->contexts_by_id, context->id, strlen(context->id), found_context);
+	if(threadIndex == 0)
+	{
+		HASH_FIND(hh_id0, db->contexts_by_id0, context->id, strlen(context->id), found_context);
+	}
+	else if(threadIndex == 1)
+	{
+		HASH_FIND(hh_id1, db->contexts_by_id1, context->id, strlen(context->id), found_context);
+	}
+	else if(threadIndex == 2)
+	{
+		HASH_FIND(hh_id2, db->contexts_by_id2, context->id, strlen(context->id), found_context);
+	}
+	else if(threadIndex == 3)
+	{
+		HASH_FIND(hh_id3, db->contexts_by_id3, context->id, strlen(context->id), found_context);
+	} else
+	{
+		return 1;
+	}
+	
+	
 	if(found_context){
 		/* Found a matching client */
 		if(found_context->sock == INVALID_SOCKET){
@@ -257,11 +278,11 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 			}
 		}else{
 			if(context->username){
-				log__printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s as %s (p%d, c%d, k%d, u'%s').",
-						context->address, context->id, context->protocol, context->clean_start, context->keepalive, context->username);
+				log__printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s as %s (p%d, c%d, k%d, u'%s', t%d).",
+						context->address, context->id, context->protocol, context->clean_start, context->keepalive, context->username, context->threadIndex);
 			}else{
-				log__printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s as %s (p%d, c%d, k%d).",
-						context->address, context->id, context->protocol, context->clean_start, context->keepalive);
+				log__printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s as %s (p%d, c%d, k%d, t%d).",
+						context->address, context->id, context->protocol, context->clean_start, context->keepalive, context->threadIndex);
 			}
 		}
 
@@ -285,7 +306,24 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 	connection_check_acl(db, context, &context->msgs_out.inflight);
 	connection_check_acl(db, context, &context->msgs_out.queued);
 
-	HASH_ADD_KEYPTR(hh_id, db->contexts_by_id, context->id, strlen(context->id), context);
+	
+	if(context->threadIndex == 0)
+	{
+		HASH_ADD_KEYPTR(hh_id0, db->contexts_by_id0, context->id, strlen(context->id), context);
+	}
+	else if(context->threadIndex == 1)
+	{
+		HASH_ADD_KEYPTR(hh_id1, db->contexts_by_id1, context->id, strlen(context->id), context);
+	}
+	else if(context->threadIndex == 2)
+	{
+		HASH_ADD_KEYPTR(hh_id2, db->contexts_by_id2, context->id, strlen(context->id), context);
+	}
+	else if(context->threadIndex == 3)
+	{
+		HASH_ADD_KEYPTR(hh_id3, db->contexts_by_id3, context->id, strlen(context->id), context);
+	}
+	
 
 #ifdef WITH_PERSISTENCE
 	if(!context->clean_start){

@@ -89,9 +89,25 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock)
 #endif
 
 	if((int)context->sock >= 0){
-		context->threadIndex = -1;
-		context->threadId = GetCurrentThreadId();
-		HASH_ADD(hh_sock, db->contexts_by_sock, sock, sizeof(context->sock), context);
+		int threadIndex = rand() % MAX_THREADS;
+		context->threadIndex = threadIndex;
+		if(threadIndex == 0)
+		{
+			HASH_ADD(hh_sock0, db->contexts_by_sock0, sock, sizeof(context->sock), context);	
+		}
+		else if(threadIndex == 1)
+		{
+			HASH_ADD(hh_sock1, db->contexts_by_sock1, sock, sizeof(context->sock), context);
+		}
+		else if(threadIndex == 2)
+		{
+			HASH_ADD(hh_sock2, db->contexts_by_sock2, sock, sizeof(context->sock), context);	
+		}
+		else if(threadIndex == 3)
+		{
+			HASH_ADD(hh_sock3, db->contexts_by_sock3, sock, sizeof(context->sock), context);
+		}
+		
 	}
 	return context;
 }
@@ -310,9 +326,34 @@ void context__free_disused(struct mosquitto_db *db)
 
 void context__remove_from_by_id(struct mosquitto_db *db, struct mosquitto *context)
 {
-	if(context->removed_from_by_id == false && context->id){
-		HASH_DELETE(hh_id, db->contexts_by_id, context);
-		context->removed_from_by_id = true;
+	if(context->threadIndex == 0)
+	{
+		if(context->removed_from_by_id == false && context->id){
+			HASH_DELETE(hh_id0, db->contexts_by_id0, context);
+			context->removed_from_by_id = true;
+		}
 	}
+	else if(context->threadIndex == 1)
+	{
+		if(context->removed_from_by_id == false && context->id){
+			HASH_DELETE(hh_id1, db->contexts_by_id1, context);
+			context->removed_from_by_id = true;
+		}
+	}
+	else if(context->threadIndex == 2)
+	{
+		if(context->removed_from_by_id == false && context->id){
+			HASH_DELETE(hh_id2, db->contexts_by_id2, context);
+			context->removed_from_by_id = true;
+		}
+	}
+	else if(context->threadIndex == 3)
+	{
+		if(context->removed_from_by_id == false && context->id){
+			HASH_DELETE(hh_id3, db->contexts_by_id3, context);
+			context->removed_from_by_id = true;
+		}
+	}
+	
 }
 

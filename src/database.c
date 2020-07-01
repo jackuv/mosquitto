@@ -118,8 +118,13 @@ int db__open(struct mosquitto__config *config, struct mosquitto_db *db)
 
 	db->last_db_id = 0;
 
-	db->contexts_by_id = NULL;
-	db->contexts_by_sock = NULL;
+	// db->contexts_by_id = NULL;
+	// db->contexts_by_sock = NULL;
+	db->contexts_by_id0 = NULL;
+	db->contexts_by_id1 = NULL;
+	db->contexts_by_id2 = NULL;
+	db->contexts_by_id3 = NULL;
+	
 	db->contexts_for_free = NULL;
 	db->contexts_by_sock0 = NULL;
 	db->contexts_by_sock1 = NULL;

@@ -49,6 +49,7 @@ static void bridge__backoff_reset(struct mosquitto *context);
 
 int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 {
+	int threadIndex = getThreadIndex(db);
 	struct mosquitto *new_context = NULL;
 	struct mosquitto **bridges;
 	char *local_id;
@@ -58,7 +59,23 @@ int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 
 	local_id = mosquitto__strdup(bridge->local_clientid);
 
-	HASH_FIND(hh_id, db->contexts_by_id, local_id, strlen(local_id), new_context);
+	if(threadIndex == 0)
+	{
+		HASH_FIND(hh_id0, db->contexts_by_id0, local_id, strlen(local_id), new_context);
+	}
+	else if(threadIndex == 1)
+	{
+		HASH_FIND(hh_id1, db->contexts_by_id1, local_id, strlen(local_id), new_context);
+	}
+	else if(threadIndex == 2)
+	{
+		HASH_FIND(hh_id2, db->contexts_by_id2, local_id, strlen(local_id), new_context);
+	}
+	else if(threadIndex == 3)
+	{
+		HASH_FIND(hh_id3, db->contexts_by_id3, local_id, strlen(local_id), new_context);
+	}
+		
 	if(new_context){
 		/* (possible from persistent db) */
 		mosquitto__free(local_id);
@@ -70,7 +87,23 @@ int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 			return MOSQ_ERR_NOMEM;
 		}
 		new_context->id = local_id;
-		HASH_ADD_KEYPTR(hh_id, db->contexts_by_id, new_context->id, strlen(new_context->id), new_context);
+		
+		if(threadIndex == 0)
+		{
+			HASH_ADD_KEYPTR(hh_id0, db->contexts_by_id0, new_context->id, strlen(new_context->id), new_context);
+		}
+		else if(threadIndex == 1)
+		{
+			HASH_ADD_KEYPTR(hh_id1, db->contexts_by_id1, new_context->id, strlen(new_context->id), new_context);
+		}
+		else if(threadIndex == 2)
+		{
+			HASH_ADD_KEYPTR(hh_id2, db->contexts_by_id2, new_context->id, strlen(new_context->id), new_context);
+		}
+		else if(threadIndex == 3)
+		{
+			HASH_ADD_KEYPTR(hh_id3, db->contexts_by_id3, new_context->id, strlen(new_context->id), new_context);
+		}
 	}
 	new_context->bridge = bridge;
 	new_context->is_bridge = true;
@@ -403,9 +436,26 @@ int bridge__connect(struct mosquitto_db *db, struct mosquitto *context)
 		mosquitto__set_state(context, mosq_cs_connect_pending);
 	}
 
-	context->threadIndex = rand() % MAX_THREADS;
-	context->threadId = db->threadIds[context->threadIndex];
-	HASH_ADD(hh_sock, db->contexts_by_sock, sock, sizeof(context->sock), context);
+	
+	int threadIndex = rand() % MAX_THREADS;
+	context->threadIndex = threadIndex;
+	if(threadIndex == 0)
+	{
+		HASH_ADD(hh_sock0, db->contexts_by_sock0, sock, sizeof(context->sock), context);	
+	}
+	else if(threadIndex == 1)
+	{
+		HASH_ADD(hh_sock1, db->contexts_by_sock1, sock, sizeof(context->sock), context);
+	}
+	else if(threadIndex == 2)
+	{
+		HASH_ADD(hh_sock2, db->contexts_by_sock2, sock, sizeof(context->sock), context);	
+	}
+	else if(threadIndex == 3)
+	{
+		HASH_ADD(hh_sock3, db->contexts_by_sock3, sock, sizeof(context->sock), context);
+	}
+
 
 	rc2 = send__connect(context, context->keepalive, context->clean_start, NULL);
 	if(rc2 == MOSQ_ERR_SUCCESS){

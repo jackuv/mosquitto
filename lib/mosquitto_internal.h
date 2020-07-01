@@ -338,11 +338,16 @@ struct mosquitto {
 	uint8_t maximum_qos;
 
 #ifdef WITH_BROKER
-	UT_hash_handle hh_id;
-	UT_hash_handle hh_sock;
+	// UT_hash_handle hh_id;
+	// UT_hash_handle hh_sock;
 	struct mosquitto *for_free_next;
 	struct session_expiry_list *expiry_list_item;
 
+	UT_hash_handle hh_id0;
+	UT_hash_handle hh_id1;
+	UT_hash_handle hh_id2;
+	UT_hash_handle hh_id3;
+		
 	UT_hash_handle hh_sock0;
 	UT_hash_handle hh_sock1;
 	UT_hash_handle hh_sock2;
@@ -353,14 +358,14 @@ struct mosquitto {
 #endif
 	char* vayo_client_mask;
 	char* vayo_topic_mask;
-	DWORD threadId;
 	int threadIndex;
-	int deleteRequired;
 };
 
 #define STREMPTY(str) (str[0] == '\0')
 
 void do_client_disconnect(struct mosquitto *mosq, int reason_code, const mosquitto_property *properties);
+
+
 
 #endif
 

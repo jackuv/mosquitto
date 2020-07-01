@@ -220,7 +220,24 @@ int net__socket_close(struct mosquitto *mosq)
 	{
 		if(mosq->sock != INVALID_SOCKET){
 #ifdef WITH_BROKER
-			HASH_DELETE(hh_sock, db->contexts_by_sock, mosq);
+			if(mosq->threadIndex == 0)
+			{
+				HASH_DELETE(hh_sock0, db->contexts_by_sock0, mosq);
+			}
+			else if(mosq->threadIndex == 1)
+			{
+				HASH_DELETE(hh_sock1, db->contexts_by_sock1, mosq);
+			}
+			else if(mosq->threadIndex == 2)
+			{
+				HASH_DELETE(hh_sock2, db->contexts_by_sock2, mosq);
+			}
+			else if(mosq->threadIndex == 3)
+			{
+				HASH_DELETE(hh_sock3, db->contexts_by_sock3, mosq);
+			}
+
+			
 #endif
 			rc = COMPAT_CLOSE(mosq->sock);
 			mosq->sock = INVALID_SOCKET;

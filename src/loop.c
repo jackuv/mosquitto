@@ -72,27 +72,95 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #ifdef WITH_WEBSOCKETS
 static void temp__expire_websockets_clients(struct mosquitto_db *db)
 {
+	int threadId = getThreadIndex(db);
 	struct mosquitto *context, *ctxt_tmp;
 	static time_t last_check = 0;
 	time_t now = mosquitto_time();
 	char *id;
 
 	if(now - last_check > 60){
-		HASH_ITER(hh_id, db->contexts_by_id, context, ctxt_tmp){
-			if(context->wsi && context->sock != INVALID_SOCKET){
-				if(context->keepalive && now - context->last_msg_in > (time_t)(context->keepalive)*3/2){
-					if(db->config->connection_messages == true){
-						if(context->id){
-							id = context->id;
-						}else{
-							id = "<unknown>";
-						}
+
+		if(threadId == 0)
+		{
+			HASH_ITER(hh_id0, db->contexts_by_id0, context, ctxt_tmp){
+				if(context->wsi && context->sock != INVALID_SOCKET){
+					if(context->keepalive && now - context->last_msg_in > (time_t)(context->keepalive)*3/2){
 						if(db->config->connection_messages == true){
-							log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s has exceeded timeout, disconnecting.", id);
+							if(context->id){
+								id = context->id;
+							}else{
+								id = "<unknown>";
+							}
+							if(db->config->connection_messages == true){
+								log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s has exceeded timeout, disconnecting.", id);
+							}
 						}
+						/* Client has exceeded keepalive*1.5 */
+						do_disconnect(db, context, MOSQ_ERR_KEEPALIVE);
 					}
-					/* Client has exceeded keepalive*1.5 */
-					do_disconnect(db, context, MOSQ_ERR_KEEPALIVE);
+				}
+			}
+		}
+		else if(threadId == 1)
+		{
+			HASH_ITER(hh_id1, db->contexts_by_id1, context, ctxt_tmp){
+				if(context->wsi && context->sock != INVALID_SOCKET){
+					if(context->keepalive && now - context->last_msg_in > (time_t)(context->keepalive)*3/2){
+						if(db->config->connection_messages == true){
+							if(context->id){
+								id = context->id;
+							}else{
+								id = "<unknown>";
+							}
+							if(db->config->connection_messages == true){
+								log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s has exceeded timeout, disconnecting.", id);
+							}
+						}
+						/* Client has exceeded keepalive*1.5 */
+						do_disconnect(db, context, MOSQ_ERR_KEEPALIVE);
+					}
+				}
+			}
+		}
+		else if(threadId == 2)
+		{
+			HASH_ITER(hh_id2, db->contexts_by_id2, context, ctxt_tmp){
+				if(context->wsi && context->sock != INVALID_SOCKET){
+					if(context->keepalive && now - context->last_msg_in > (time_t)(context->keepalive)*3/2){
+						if(db->config->connection_messages == true){
+							if(context->id){
+								id = context->id;
+							}else{
+								id = "<unknown>";
+							}
+							if(db->config->connection_messages == true){
+								log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s has exceeded timeout, disconnecting.", id);
+							}
+						}
+						/* Client has exceeded keepalive*1.5 */
+						do_disconnect(db, context, MOSQ_ERR_KEEPALIVE);
+					}
+				}
+			}
+		}
+		else if(threadId == 3)
+		{
+			HASH_ITER(hh_id3, db->contexts_by_id3, context, ctxt_tmp){
+				if(context->wsi && context->sock != INVALID_SOCKET){
+					if(context->keepalive && now - context->last_msg_in > (time_t)(context->keepalive)*3/2){
+						if(db->config->connection_messages == true){
+							if(context->id){
+								id = context->id;
+							}else{
+								id = "<unknown>";
+							}
+							if(db->config->connection_messages == true){
+								log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s has exceeded timeout, disconnecting.", id);
+							}
+						}
+						/* Client has exceeded keepalive*1.5 */
+						do_disconnect(db, context, MOSQ_ERR_KEEPALIVE);
+					}
 				}
 			}
 		}
@@ -124,12 +192,6 @@ typedef struct mosquitto_listener_arg {
 } listener_data, *plistener_data;
 
 DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam);
-
-void assignRandomThread(struct mosquitto_db *db, struct mosquitto* context)
-{
-	context->threadIndex = rand() % MAX_THREADS;
-	context->threadId = db->threadIds[context->threadIndex];		
-}
 
 void accept_connections(LPVOID *lpParam)
 {
@@ -184,10 +246,21 @@ void accept_connections(LPVOID *lpParam)
 	while(run)
 	{
 		context = net__socket_accept(db, listensock);
-		if(context == NULL)
-			continue;
-		assignRandomThread(db, context);
 	}
+}
+
+int getThreadIndex(struct mosquitto_db *db)
+{
+	DWORD tid = GetCurrentThreadId();
+	int i;
+	for(i = 0; i < MAX_THREADS; i++)
+		if(tid == db->threadIds[i])
+			break;
+
+	if(i == MAX_THREADS)
+		ExitProcess(1);
+
+	return i;
 }
 
 int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int listensock_count)
@@ -283,7 +356,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 	}
 #endif
 #endif
-	
+
 	while(run){
 		context__free_disused(db);
 #ifdef WITH_SYS_TREE
@@ -441,7 +514,9 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 #endif
 				
 		time_count = 0;
-		HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){ // UT_hash_handle, like array, current item, tmp
+
+		// warning 
+		HASH_ITER(hh_sock0, db->contexts_by_sock0, context, ctxt_tmp){ // UT_hash_handle, like array, current item, tmp
 			if(time_count > 0){
 				time_count--;
 			}else{
@@ -698,7 +773,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 
 int mosquitto_main_loop_threaded(struct mosquitto_db *db, mosq_sock_t *listensock, int listensock_count)
 {
-	plistener_data* pListenerDataArray = malloc(listensock_count * sizeof(listener_data));
+	/*plistener_data* pListenerDataArray = malloc(listensock_count * sizeof(listener_data));
 	if(!pListenerDataArray)
 	{
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory. Unable listener thread args array");
@@ -737,13 +812,13 @@ int mosquitto_main_loop_threaded(struct mosquitto_db *db, mosq_sock_t *listensoc
            log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory. Unable create listener thread");
            return MOSQ_ERR_NOMEM;
         }
-	}
+	}*/
 		
 	pmatdata pDataArray[MAX_THREADS];
 	DWORD   dwThreadIdArray[MAX_THREADS];
 	HANDLE  hThreadArray[MAX_THREADS]; 
 
-	int pollfd_max = 32000;
+	int pollfd_max = 64000;
 	int index = 0;
 	int size = pollfd_max / MAX_THREADS;
 	
@@ -787,7 +862,7 @@ int mosquitto_main_loop_threaded(struct mosquitto_db *db, mosq_sock_t *listensoc
 		
 	WaitForMultipleObjects(MAX_THREADS, hThreadArray, TRUE, INFINITE);
 
-	for(int i=0; i<listensock_count; i++)
+	/*for(int i=0; i<listensock_count; i++)
 	{
 		TerminateThread(hListenerThreadArray[i], 0);
 		CloseHandle(hListenerThreadArray[i]);
@@ -798,7 +873,7 @@ int mosquitto_main_loop_threaded(struct mosquitto_db *db, mosq_sock_t *listensoc
         }
 	}
 	free(pListenerDataArray);
-	free(hListenerThreadArray);
+	free(hListenerThreadArray);*/
 			
 	for(int i=0; i<MAX_THREADS; i++)
     {
@@ -815,9 +890,9 @@ int mosquitto_main_loop_threaded(struct mosquitto_db *db, mosq_sock_t *listensoc
 
 void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reason)
 {
-	if(GetCurrentThreadId() != context->threadId)
+	if(context->threadIndex != getThreadIndex(db))
 		return;
-		
+	
 	char *id;
 #ifdef WITH_EPOLL
 	struct epoll_event ev;
@@ -843,7 +918,24 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reaso
 			libwebsocket_callback_on_writable(context->ws_context, context->wsi);
 		}
 		if(context->sock != INVALID_SOCKET){
-			HASH_DELETE(hh_sock, db->contexts_by_sock, context);
+			if(context->threadIndex == 0)
+			{
+				HASH_DELETE(hh_sock0, db->contexts_by_sock0, context);
+			}
+			else if(context->threadIndex == 1)
+			{
+				HASH_DELETE(hh_sock1, db->contexts_by_sock1, context);
+			}
+			else if(context->threadIndex == 2)
+			{
+				HASH_DELETE(hh_sock2, db->contexts_by_sock2, context);
+			}
+			else if(context->threadIndex == 3)
+			{
+				HASH_DELETE(hh_sock3, db->contexts_by_sock3, context);
+			}
+
+			
 #ifdef WITH_EPOLL
 			if (epoll_ctl(db->epollfd, EPOLL_CTL_DEL, context->sock, &ev) == -1) {
 				log__printf(NULL, MOSQ_LOG_DEBUG, "Error in epoll disconnecting websockets: %s", strerror(errno));
@@ -912,6 +1004,7 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, mosq_sock_t sock, 
 static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pollfds) // read write + pings
 #endif
 {
+	int threadIndex = getThreadIndex(db);
 	struct mosquitto *context;
 #ifndef WITH_EPOLL
 	struct mosquitto *ctxt_tmp;
@@ -919,26 +1012,25 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 	int err;
 	socklen_t len;
 	int rc;
-	DWORD currentThreadId = GetCurrentThreadId();
-	
-#ifdef WITH_EPOLL
+		
+/*#ifdef WITH_EPOLL
 	int i;
 	context = NULL;
 	HASH_FIND(hh_sock, db->contexts_by_sock, &sock, sizeof(mosq_sock_t), context);
 	if(!context) {
 		return;
 	}
-	for (i=0;i<1;i++) {
-#else
-	HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){ // WRITE
-		if(currentThreadId != context->threadId)
-			continue;
+	for (i=0;i<1;i++) {*/
+// #else
+	if(threadIndex == 0)
+	{
+		HASH_ITER(hh_sock0, db->contexts_by_sock0, context, ctxt_tmp){ // WRITE
 		if(context->pollfd_index < 0){
 			continue;
 		}
 
 		assert(pollfds[context->pollfd_index].fd == context->sock);
-#endif
+// #endif
 
 #ifdef WITH_WEBSOCKETS
 		if(context->wsi){
@@ -1000,22 +1092,237 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 			}
 		}
 	} // END OF ITER
+	}
+	else if(threadIndex == 1)
+	{
+		HASH_ITER(hh_sock1, db->contexts_by_sock1, context, ctxt_tmp){ // WRITE
+		if(context->pollfd_index < 0){
+			continue;
+		}
 
+		assert(pollfds[context->pollfd_index].fd == context->sock);
+// #endif
+
+#ifdef WITH_WEBSOCKETS
+		if(context->wsi){
+			struct lws_pollfd wspoll;
 #ifdef WITH_EPOLL
+			wspoll.fd = context->sock;
+			wspoll.events = context->events;
+			wspoll.revents = events;
+#else
+			wspoll.fd = pollfds[context->pollfd_index].fd;
+			wspoll.events = pollfds[context->pollfd_index].events;
+			wspoll.revents = pollfds[context->pollfd_index].revents;
+#endif
+#ifdef LWS_LIBRARY_VERSION_NUMBER
+			lws_service_fd(lws_get_context(context->wsi), &wspoll);
+#else
+			lws_service_fd(context->ws_context, &wspoll);
+#endif
+			continue;
+		}
+#endif
+
+#ifdef WITH_TLS
+#ifdef WITH_EPOLL
+		if(events & EPOLLOUT ||
+#else
+		if(pollfds[context->pollfd_index].revents & POLLOUT ||
+#endif
+				context->want_write ||
+				(context->ssl && context->state == mosq_cs_new)){
+#else
+#ifdef WITH_EPOLL
+		if(events & EPOLLOUT){
+#else			
+		if(pollfds[context->pollfd_index].revents & POLLOUT){
+#endif
+#endif
+			if(context->state == mosq_cs_connect_pending){
+				len = sizeof(int);
+				if(!getsockopt(context->sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len)){
+					if(err == 0){
+						mosquitto__set_state(context, mosq_cs_new);
+#if defined(WITH_ADNS) && defined(WITH_BRIDGE)
+						if(context->bridge){
+							bridge__connect_step3(db, context);
+							continue;
+						}
+#endif
+					}
+				}else{
+					do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
+					continue;
+				}
+			}
+			rc = packet__write(context);
+			if(rc){
+				do_disconnect(db, context, rc);
+				continue;
+			}
+		}
+	} // END OF ITER		
+	}
+	else if(threadIndex == 2)
+	{
+		HASH_ITER(hh_sock2, db->contexts_by_sock2, context, ctxt_tmp){ // WRITE
+		if(context->pollfd_index < 0){
+			continue;
+		}
+
+		assert(pollfds[context->pollfd_index].fd == context->sock);
+// #endif
+
+#ifdef WITH_WEBSOCKETS
+		if(context->wsi){
+			struct lws_pollfd wspoll;
+#ifdef WITH_EPOLL
+			wspoll.fd = context->sock;
+			wspoll.events = context->events;
+			wspoll.revents = events;
+#else
+			wspoll.fd = pollfds[context->pollfd_index].fd;
+			wspoll.events = pollfds[context->pollfd_index].events;
+			wspoll.revents = pollfds[context->pollfd_index].revents;
+#endif
+#ifdef LWS_LIBRARY_VERSION_NUMBER
+			lws_service_fd(lws_get_context(context->wsi), &wspoll);
+#else
+			lws_service_fd(context->ws_context, &wspoll);
+#endif
+			continue;
+		}
+#endif
+
+#ifdef WITH_TLS
+#ifdef WITH_EPOLL
+		if(events & EPOLLOUT ||
+#else
+		if(pollfds[context->pollfd_index].revents & POLLOUT ||
+#endif
+				context->want_write ||
+				(context->ssl && context->state == mosq_cs_new)){
+#else
+#ifdef WITH_EPOLL
+		if(events & EPOLLOUT){
+#else			
+		if(pollfds[context->pollfd_index].revents & POLLOUT){
+#endif
+#endif
+			if(context->state == mosq_cs_connect_pending){
+				len = sizeof(int);
+				if(!getsockopt(context->sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len)){
+					if(err == 0){
+						mosquitto__set_state(context, mosq_cs_new);
+#if defined(WITH_ADNS) && defined(WITH_BRIDGE)
+						if(context->bridge){
+							bridge__connect_step3(db, context);
+							continue;
+						}
+#endif
+					}
+				}else{
+					do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
+					continue;
+				}
+			}
+			rc = packet__write(context);
+			if(rc){
+				do_disconnect(db, context, rc);
+				continue;
+			}
+		}
+	} // END OF ITER		
+	}
+	else if(threadIndex == 3)
+	{
+		HASH_ITER(hh_sock3, db->contexts_by_sock3, context, ctxt_tmp){ // WRITE
+		if(context->pollfd_index < 0){
+			continue;
+		}
+
+		assert(pollfds[context->pollfd_index].fd == context->sock);
+// #endif
+
+#ifdef WITH_WEBSOCKETS
+		if(context->wsi){
+			struct lws_pollfd wspoll;
+#ifdef WITH_EPOLL
+			wspoll.fd = context->sock;
+			wspoll.events = context->events;
+			wspoll.revents = events;
+#else
+			wspoll.fd = pollfds[context->pollfd_index].fd;
+			wspoll.events = pollfds[context->pollfd_index].events;
+			wspoll.revents = pollfds[context->pollfd_index].revents;
+#endif
+#ifdef LWS_LIBRARY_VERSION_NUMBER
+			lws_service_fd(lws_get_context(context->wsi), &wspoll);
+#else
+			lws_service_fd(context->ws_context, &wspoll);
+#endif
+			continue;
+		}
+#endif
+
+#ifdef WITH_TLS
+#ifdef WITH_EPOLL
+		if(events & EPOLLOUT ||
+#else
+		if(pollfds[context->pollfd_index].revents & POLLOUT ||
+#endif
+				context->want_write ||
+				(context->ssl && context->state == mosq_cs_new)){
+#else
+#ifdef WITH_EPOLL
+		if(events & EPOLLOUT){
+#else			
+		if(pollfds[context->pollfd_index].revents & POLLOUT){
+#endif
+#endif
+			if(context->state == mosq_cs_connect_pending){
+				len = sizeof(int);
+				if(!getsockopt(context->sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len)){
+					if(err == 0){
+						mosquitto__set_state(context, mosq_cs_new);
+#if defined(WITH_ADNS) && defined(WITH_BRIDGE)
+						if(context->bridge){
+							bridge__connect_step3(db, context);
+							continue;
+						}
+#endif
+					}
+				}else{
+					do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
+					continue;
+				}
+			}
+			rc = packet__write(context);
+			if(rc){
+				do_disconnect(db, context, rc);
+				continue;
+			}
+		}
+	} // END OF ITER		
+	}
+
+
+/*#ifdef WITH_EPOLL
 	context = NULL;
 	HASH_FIND(hh_sock, db->contexts_by_sock, &sock, sizeof(mosq_sock_t), context);
 	if(!context) {
 		return;
 	}
 	for (i=0;i<1;i++) {
-#else
-	HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){ // READ
-		if(currentThreadId != context->threadId)
-			continue;
+#else*/
+	if(threadIndex == 0)
+	{
+		HASH_ITER(hh_sock0, db->contexts_by_sock0, context, ctxt_tmp){ // READ
 		if(context->pollfd_index < 0){
 			continue;
 		}
-#endif
+//#endif
 #ifdef WITH_WEBSOCKETS
 		if(context->wsi){
 			// Websocket are already handled above
@@ -1055,13 +1362,157 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 			}
 		}
 	}
+	}
+	else if(threadIndex == 1)
+	{
+		HASH_ITER(hh_sock1, db->contexts_by_sock1, context, ctxt_tmp){ // READ
+		if(context->pollfd_index < 0){
+			continue;
+		}
+//#endif
+#ifdef WITH_WEBSOCKETS
+		if(context->wsi){
+			// Websocket are already handled above
+			continue;
+		}
+#endif
+
+#ifdef WITH_TLS
+#ifdef WITH_EPOLL
+		if(events & EPOLLIN ||
+#else
+		if(pollfds[context->pollfd_index].revents & POLLIN ||
+#endif
+				(context->ssl && context->state == mosq_cs_new)){
+#else
+#ifdef WITH_EPOLL
+		if(events & EPOLLIN){
+#else
+		if(pollfds[context->pollfd_index].revents & POLLIN){
+#endif
+#endif
+			do{
+				rc = packet__read(db, context);
+				if(rc){
+					do_disconnect(db, context, rc);
+					continue;
+				}
+			}while(SSL_DATA_PENDING(context));
+		}else{
+#ifdef WITH_EPOLL
+			if(events & (EPOLLERR | EPOLLHUP)){
+#else
+			if(context->pollfd_index >= 0 && pollfds[context->pollfd_index].revents & (POLLERR | POLLNVAL | POLLHUP)){
+#endif
+				do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
+				continue;
+			}
+		}
+	}
+	}
+	else if(threadIndex == 2)
+	{
+		HASH_ITER(hh_sock2, db->contexts_by_sock2, context, ctxt_tmp){ // READ
+		if(context->pollfd_index < 0){
+			continue;
+		}
+//#endif
+#ifdef WITH_WEBSOCKETS
+		if(context->wsi){
+			// Websocket are already handled above
+			continue;
+		}
+#endif
+
+#ifdef WITH_TLS
+#ifdef WITH_EPOLL
+		if(events & EPOLLIN ||
+#else
+		if(pollfds[context->pollfd_index].revents & POLLIN ||
+#endif
+				(context->ssl && context->state == mosq_cs_new)){
+#else
+#ifdef WITH_EPOLL
+		if(events & EPOLLIN){
+#else
+		if(pollfds[context->pollfd_index].revents & POLLIN){
+#endif
+#endif
+			do{
+				rc = packet__read(db, context);
+				if(rc){
+					do_disconnect(db, context, rc);
+					continue;
+				}
+			}while(SSL_DATA_PENDING(context));
+		}else{
+#ifdef WITH_EPOLL
+			if(events & (EPOLLERR | EPOLLHUP)){
+#else
+			if(context->pollfd_index >= 0 && pollfds[context->pollfd_index].revents & (POLLERR | POLLNVAL | POLLHUP)){
+#endif
+				do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
+				continue;
+			}
+		}
+	}
+	}
+	else if(threadIndex == 3)
+	{
+		HASH_ITER(hh_sock3, db->contexts_by_sock3, context, ctxt_tmp){ // READ
+		if(context->pollfd_index < 0){
+			continue;
+		}
+//#endif
+#ifdef WITH_WEBSOCKETS
+		if(context->wsi){
+			// Websocket are already handled above
+			continue;
+		}
+#endif
+
+#ifdef WITH_TLS
+#ifdef WITH_EPOLL
+		if(events & EPOLLIN ||
+#else
+		if(pollfds[context->pollfd_index].revents & POLLIN ||
+#endif
+				(context->ssl && context->state == mosq_cs_new)){
+#else
+#ifdef WITH_EPOLL
+		if(events & EPOLLIN){
+#else
+		if(pollfds[context->pollfd_index].revents & POLLIN){
+#endif
+#endif
+			do{
+				rc = packet__read(db, context);
+				if(rc){
+					do_disconnect(db, context, rc);
+					continue;
+				}
+			}while(SSL_DATA_PENDING(context));
+		}else{
+#ifdef WITH_EPOLL
+			if(events & (EPOLLERR | EPOLLHUP)){
+#else
+			if(context->pollfd_index >= 0 && pollfds[context->pollfd_index].revents & (POLLERR | POLLNVAL | POLLHUP)){
+#endif
+				do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
+				continue;
+			}
+		}
+	}
+	}
 }
 
 DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 {
 	pmatdata arg = (pmatdata)lpParam;
 	struct mosquitto_db *db = arg->db;
-	int threadIndex = arg->threadIndex;		
+	int threadIndex = arg->threadIndex;
+	int  listensock_count = arg->listensock_count;
+	mosq_sock_t *listensock = arg->listensock;		
 								
 #ifdef WITH_SYS_TREE
 	time_t start_time = mosquitto_time();
@@ -1154,12 +1605,13 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 #endif
 #endif
 
-	DWORD currentThreadId = GetCurrentThreadId();
+	const int currentThreadId = getThreadIndex(db);
 	while(run){
-		context__free_disused(db);
-					
+		if(currentThreadId == 0)
+			context__free_disused(db);
+							
 #ifdef WITH_SYS_TREE
-		if(db->config->sys_interval > 0){
+		if(currentThreadId == 0 && db->config->sys_interval > 0){
 			sys_tree__update(db, db->config->sys_interval, start_time);
 		}	
 #endif
@@ -1168,15 +1620,15 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 		memset(pollfds, -1, sizeof(struct pollfd)*pollfd_max);
 
 		pollfd_index = 0;
-		/*if(threadIndex == 0)
-		{
+		// if(threadIndex == 0)
+		//{
 			for(i=0; i<listensock_count; i++){
 				pollfds[pollfd_index].fd = listensock[i];
 				pollfds[pollfd_index].events = POLLIN;
 				pollfds[pollfd_index].revents = 0;
 				pollfd_index++;
 			}
-		}*/
+		// }
 		
 		
 #endif
@@ -1318,60 +1770,68 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 #endif
 
 		time_count = 0;
-		// WaitForSingleObject(db->socket_mutex, INFINITE);
-
-		/*unsigned int count = HASH_CNT(hh_sock, db->contexts_by_sock);
-		if(count > 0)
-			printf("there are %u sockets\n", count);*/
-
 		
-		HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){ // UT_hash_handle, like array, current item, tmp
-			if(currentThreadId != context->threadId)
-				continue;
-			if(time_count > 0){
+		if(threadIndex == 0)
+		{
+			HASH_ITER(hh_sock0, db->contexts_by_sock0, context, ctxt_tmp)
+			{
+			// UT_hash_handle, like array, current item, tmp
+			if(time_count > 0)
+			{
 				time_count--;
-			}else{
+			}else
+			{
 				time_count = 1000;
 				now = mosquitto_time();
 			}
 			context->pollfd_index = -1;
 
-			if(context->sock != INVALID_SOCKET){
+			if(context->sock != INVALID_SOCKET)
+			{
 #ifdef WITH_BRIDGE
-				if(context->bridge){
+				if(context->bridge)
+				{
 					mosquitto__check_keepalive(db, context);
 					if(context->bridge->round_robin == false
-							&& context->bridge->cur_address != 0
-							&& context->bridge->primary_retry
-							&& now > context->bridge->primary_retry){
+						&& context->bridge->cur_address != 0
+						&& context->bridge->primary_retry
+						&& now > context->bridge->primary_retry)
+					{
 
-						if(context->bridge->primary_retry_sock == INVALID_SOCKET){
+						if(context->bridge->primary_retry_sock == INVALID_SOCKET)
+						{
 							rc = net__try_connect(context->bridge->addresses[0].address,
-									context->bridge->addresses[0].port,
-									&context->bridge->primary_retry_sock, NULL, false);
+							                      context->bridge->addresses[0].port,
+							                      &context->bridge->primary_retry_sock, NULL, false);
 
-							if(rc == 0){
+							if(rc == 0)
+							{
 								COMPAT_CLOSE(context->bridge->primary_retry_sock);
 								context->bridge->primary_retry_sock = INVALID_SOCKET;
 								context->bridge->primary_retry = 0;
 								net__socket_close(db, context);
 								context->bridge->cur_address = 0;
 							}
-						}else{
+						}else
+						{
 							len = sizeof(int);
-							if(!getsockopt(context->bridge->primary_retry_sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len)){
-								if(err == 0){
+							if(!getsockopt(context->bridge->primary_retry_sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len))
+							{
+								if(err == 0)
+								{
 									COMPAT_CLOSE(context->bridge->primary_retry_sock);
 									context->bridge->primary_retry_sock = INVALID_SOCKET;
 									context->bridge->primary_retry = 0;
 									net__socket_close(db, context);
 									context->bridge->cur_address = context->bridge->address_count-1;
-								}else{
+								}else
+								{
 									COMPAT_CLOSE(context->bridge->primary_retry_sock);
 									context->bridge->primary_retry_sock = INVALID_SOCKET;
 									context->bridge->primary_retry = now+5;
 								}
-							}else{
+							}else
+							{
 								COMPAT_CLOSE(context->bridge->primary_retry_sock);
 								context->bridge->primary_retry_sock = INVALID_SOCKET;
 								context->bridge->primary_retry = now+5;
@@ -1383,10 +1843,12 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 
 				/* Local bridges never time out in this fashion. */
 				if(!(context->keepalive)
-						|| context->bridge
-						|| now - context->last_msg_in <= (time_t)(context->keepalive)*3/2){
+					|| context->bridge
+					|| now - context->last_msg_in <= (time_t)(context->keepalive)*3/2)
+				{
 
-					if(db__message_write(db, context) == MOSQ_ERR_SUCCESS){
+					if(db__message_write(db, context) == MOSQ_ERR_SUCCESS)
+					{
 #ifdef WITH_EPOLL
 						if(context->current_out_packet || context->state == mosq_cs_connect_pending || context->ws_want_write){
 							if(!(context->events & EPOLLOUT)) {
@@ -1417,24 +1879,411 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 						pollfds[pollfd_index].fd = context->sock;
 						pollfds[pollfd_index].events = POLLIN;
 						pollfds[pollfd_index].revents = 0;
-						if(context->current_out_packet || context->state == mosq_cs_connect_pending || context->ws_want_write){
+						if(context->current_out_packet || context->state == mosq_cs_connect_pending || context->ws_want_write)
+						{
 							pollfds[pollfd_index].events |= POLLOUT;
 							context->ws_want_write = false;
 						}
 						context->pollfd_index = pollfd_index;
 						pollfd_index++;
 #endif
-					}else{
+					}else
+					{
 						do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 					}
-				}else{
+				}else
+				{
 					/* Client has exceeded keepalive*1.5 */
 					do_disconnect(db, context, MOSQ_ERR_KEEPALIVE);
 				}
 			}
 		} // HASH_ITER END 
-		// ReleaseMutex(db->socket_mutex);
-		
+		}
+		else if(threadIndex == 1)
+		{
+			HASH_ITER(hh_sock1, db->contexts_by_sock1, context, ctxt_tmp)
+			{
+			// UT_hash_handle, like array, current item, tmp
+			if(time_count > 0)
+			{
+				time_count--;
+			}else
+			{
+				time_count = 1000;
+				now = mosquitto_time();
+			}
+			context->pollfd_index = -1;
+
+			if(context->sock != INVALID_SOCKET)
+			{
+#ifdef WITH_BRIDGE
+				if(context->bridge)
+				{
+					mosquitto__check_keepalive(db, context);
+					if(context->bridge->round_robin == false
+						&& context->bridge->cur_address != 0
+						&& context->bridge->primary_retry
+						&& now > context->bridge->primary_retry)
+					{
+
+						if(context->bridge->primary_retry_sock == INVALID_SOCKET)
+						{
+							rc = net__try_connect(context->bridge->addresses[0].address,
+							                      context->bridge->addresses[0].port,
+							                      &context->bridge->primary_retry_sock, NULL, false);
+
+							if(rc == 0)
+							{
+								COMPAT_CLOSE(context->bridge->primary_retry_sock);
+								context->bridge->primary_retry_sock = INVALID_SOCKET;
+								context->bridge->primary_retry = 0;
+								net__socket_close(db, context);
+								context->bridge->cur_address = 0;
+							}
+						}else
+						{
+							len = sizeof(int);
+							if(!getsockopt(context->bridge->primary_retry_sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len))
+							{
+								if(err == 0)
+								{
+									COMPAT_CLOSE(context->bridge->primary_retry_sock);
+									context->bridge->primary_retry_sock = INVALID_SOCKET;
+									context->bridge->primary_retry = 0;
+									net__socket_close(db, context);
+									context->bridge->cur_address = context->bridge->address_count-1;
+								}else
+								{
+									COMPAT_CLOSE(context->bridge->primary_retry_sock);
+									context->bridge->primary_retry_sock = INVALID_SOCKET;
+									context->bridge->primary_retry = now+5;
+								}
+							}else
+							{
+								COMPAT_CLOSE(context->bridge->primary_retry_sock);
+								context->bridge->primary_retry_sock = INVALID_SOCKET;
+								context->bridge->primary_retry = now+5;
+							}
+						}
+					}
+				}
+#endif
+
+				/* Local bridges never time out in this fashion. */
+				if(!(context->keepalive)
+					|| context->bridge
+					|| now - context->last_msg_in <= (time_t)(context->keepalive)*3/2)
+				{
+
+					if(db__message_write(db, context) == MOSQ_ERR_SUCCESS)
+					{
+#ifdef WITH_EPOLL
+						if(context->current_out_packet || context->state == mosq_cs_connect_pending || context->ws_want_write){
+							if(!(context->events & EPOLLOUT)) {
+								ev.data.fd = context->sock;
+								ev.events = EPOLLIN | EPOLLOUT;
+								if(epoll_ctl(db->epollfd, EPOLL_CTL_ADD, context->sock, &ev) == -1) {
+									if((errno != EEXIST)||(epoll_ctl(db->epollfd, EPOLL_CTL_MOD, context->sock, &ev) == -1)) {
+											log__printf(NULL, MOSQ_LOG_DEBUG, "Error in epoll re-registering to EPOLLOUT: %s", strerror(errno));
+									}
+								}
+								context->events = EPOLLIN | EPOLLOUT;
+							}
+							context->ws_want_write = false;
+						}
+						else{
+							if(context->events & EPOLLOUT) {
+								ev.data.fd = context->sock;
+								ev.events = EPOLLIN;
+								if(epoll_ctl(db->epollfd, EPOLL_CTL_ADD, context->sock, &ev) == -1) {
+									if((errno != EEXIST)||(epoll_ctl(db->epollfd, EPOLL_CTL_MOD, context->sock, &ev) == -1)) {
+											log__printf(NULL, MOSQ_LOG_DEBUG, "Error in epoll re-registering to EPOLLIN: %s", strerror(errno));
+									}
+								}
+								context->events = EPOLLIN;
+							}
+						}
+#else
+						pollfds[pollfd_index].fd = context->sock;
+						pollfds[pollfd_index].events = POLLIN;
+						pollfds[pollfd_index].revents = 0;
+						if(context->current_out_packet || context->state == mosq_cs_connect_pending || context->ws_want_write)
+						{
+							pollfds[pollfd_index].events |= POLLOUT;
+							context->ws_want_write = false;
+						}
+						context->pollfd_index = pollfd_index;
+						pollfd_index++;
+#endif
+					}else
+					{
+						do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
+					}
+				}else
+				{
+					/* Client has exceeded keepalive*1.5 */
+					do_disconnect(db, context, MOSQ_ERR_KEEPALIVE);
+				}
+			}
+		} // HASH_ITER END 
+		}
+		else if(threadIndex == 2)
+		{
+			HASH_ITER(hh_sock2, db->contexts_by_sock2, context, ctxt_tmp)
+			{
+			// UT_hash_handle, like array, current item, tmp
+			if(time_count > 0)
+			{
+				time_count--;
+			}else
+			{
+				time_count = 1000;
+				now = mosquitto_time();
+			}
+			context->pollfd_index = -1;
+
+			if(context->sock != INVALID_SOCKET)
+			{
+#ifdef WITH_BRIDGE
+				if(context->bridge)
+				{
+					mosquitto__check_keepalive(db, context);
+					if(context->bridge->round_robin == false
+						&& context->bridge->cur_address != 0
+						&& context->bridge->primary_retry
+						&& now > context->bridge->primary_retry)
+					{
+
+						if(context->bridge->primary_retry_sock == INVALID_SOCKET)
+						{
+							rc = net__try_connect(context->bridge->addresses[0].address,
+							                      context->bridge->addresses[0].port,
+							                      &context->bridge->primary_retry_sock, NULL, false);
+
+							if(rc == 0)
+							{
+								COMPAT_CLOSE(context->bridge->primary_retry_sock);
+								context->bridge->primary_retry_sock = INVALID_SOCKET;
+								context->bridge->primary_retry = 0;
+								net__socket_close(db, context);
+								context->bridge->cur_address = 0;
+							}
+						}else
+						{
+							len = sizeof(int);
+							if(!getsockopt(context->bridge->primary_retry_sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len))
+							{
+								if(err == 0)
+								{
+									COMPAT_CLOSE(context->bridge->primary_retry_sock);
+									context->bridge->primary_retry_sock = INVALID_SOCKET;
+									context->bridge->primary_retry = 0;
+									net__socket_close(db, context);
+									context->bridge->cur_address = context->bridge->address_count-1;
+								}else
+								{
+									COMPAT_CLOSE(context->bridge->primary_retry_sock);
+									context->bridge->primary_retry_sock = INVALID_SOCKET;
+									context->bridge->primary_retry = now+5;
+								}
+							}else
+							{
+								COMPAT_CLOSE(context->bridge->primary_retry_sock);
+								context->bridge->primary_retry_sock = INVALID_SOCKET;
+								context->bridge->primary_retry = now+5;
+							}
+						}
+					}
+				}
+#endif
+
+				/* Local bridges never time out in this fashion. */
+				if(!(context->keepalive)
+					|| context->bridge
+					|| now - context->last_msg_in <= (time_t)(context->keepalive)*3/2)
+				{
+
+					if(db__message_write(db, context) == MOSQ_ERR_SUCCESS)
+					{
+#ifdef WITH_EPOLL
+						if(context->current_out_packet || context->state == mosq_cs_connect_pending || context->ws_want_write){
+							if(!(context->events & EPOLLOUT)) {
+								ev.data.fd = context->sock;
+								ev.events = EPOLLIN | EPOLLOUT;
+								if(epoll_ctl(db->epollfd, EPOLL_CTL_ADD, context->sock, &ev) == -1) {
+									if((errno != EEXIST)||(epoll_ctl(db->epollfd, EPOLL_CTL_MOD, context->sock, &ev) == -1)) {
+											log__printf(NULL, MOSQ_LOG_DEBUG, "Error in epoll re-registering to EPOLLOUT: %s", strerror(errno));
+									}
+								}
+								context->events = EPOLLIN | EPOLLOUT;
+							}
+							context->ws_want_write = false;
+						}
+						else{
+							if(context->events & EPOLLOUT) {
+								ev.data.fd = context->sock;
+								ev.events = EPOLLIN;
+								if(epoll_ctl(db->epollfd, EPOLL_CTL_ADD, context->sock, &ev) == -1) {
+									if((errno != EEXIST)||(epoll_ctl(db->epollfd, EPOLL_CTL_MOD, context->sock, &ev) == -1)) {
+											log__printf(NULL, MOSQ_LOG_DEBUG, "Error in epoll re-registering to EPOLLIN: %s", strerror(errno));
+									}
+								}
+								context->events = EPOLLIN;
+							}
+						}
+#else
+						pollfds[pollfd_index].fd = context->sock;
+						pollfds[pollfd_index].events = POLLIN;
+						pollfds[pollfd_index].revents = 0;
+						if(context->current_out_packet || context->state == mosq_cs_connect_pending || context->ws_want_write)
+						{
+							pollfds[pollfd_index].events |= POLLOUT;
+							context->ws_want_write = false;
+						}
+						context->pollfd_index = pollfd_index;
+						pollfd_index++;
+#endif
+					}else
+					{
+						do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
+					}
+				}else
+				{
+					/* Client has exceeded keepalive*1.5 */
+					do_disconnect(db, context, MOSQ_ERR_KEEPALIVE);
+				}
+			}
+		} // HASH_ITER END 
+		}
+		else if(threadIndex == 3)
+		{
+			HASH_ITER(hh_sock3, db->contexts_by_sock3, context, ctxt_tmp)
+			{
+			// UT_hash_handle, like array, current item, tmp
+			if(time_count > 0)
+			{
+				time_count--;
+			}else
+			{
+				time_count = 1000;
+				now = mosquitto_time();
+			}
+			context->pollfd_index = -1;
+
+			if(context->sock != INVALID_SOCKET)
+			{
+#ifdef WITH_BRIDGE
+				if(context->bridge)
+				{
+					mosquitto__check_keepalive(db, context);
+					if(context->bridge->round_robin == false
+						&& context->bridge->cur_address != 0
+						&& context->bridge->primary_retry
+						&& now > context->bridge->primary_retry)
+					{
+
+						if(context->bridge->primary_retry_sock == INVALID_SOCKET)
+						{
+							rc = net__try_connect(context->bridge->addresses[0].address,
+							                      context->bridge->addresses[0].port,
+							                      &context->bridge->primary_retry_sock, NULL, false);
+
+							if(rc == 0)
+							{
+								COMPAT_CLOSE(context->bridge->primary_retry_sock);
+								context->bridge->primary_retry_sock = INVALID_SOCKET;
+								context->bridge->primary_retry = 0;
+								net__socket_close(db, context);
+								context->bridge->cur_address = 0;
+							}
+						}else
+						{
+							len = sizeof(int);
+							if(!getsockopt(context->bridge->primary_retry_sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len))
+							{
+								if(err == 0)
+								{
+									COMPAT_CLOSE(context->bridge->primary_retry_sock);
+									context->bridge->primary_retry_sock = INVALID_SOCKET;
+									context->bridge->primary_retry = 0;
+									net__socket_close(db, context);
+									context->bridge->cur_address = context->bridge->address_count-1;
+								}else
+								{
+									COMPAT_CLOSE(context->bridge->primary_retry_sock);
+									context->bridge->primary_retry_sock = INVALID_SOCKET;
+									context->bridge->primary_retry = now+5;
+								}
+							}else
+							{
+								COMPAT_CLOSE(context->bridge->primary_retry_sock);
+								context->bridge->primary_retry_sock = INVALID_SOCKET;
+								context->bridge->primary_retry = now+5;
+							}
+						}
+					}
+				}
+#endif
+
+				/* Local bridges never time out in this fashion. */
+				if(!(context->keepalive)
+					|| context->bridge
+					|| now - context->last_msg_in <= (time_t)(context->keepalive)*3/2)
+				{
+
+					if(db__message_write(db, context) == MOSQ_ERR_SUCCESS)
+					{
+#ifdef WITH_EPOLL
+						if(context->current_out_packet || context->state == mosq_cs_connect_pending || context->ws_want_write){
+							if(!(context->events & EPOLLOUT)) {
+								ev.data.fd = context->sock;
+								ev.events = EPOLLIN | EPOLLOUT;
+								if(epoll_ctl(db->epollfd, EPOLL_CTL_ADD, context->sock, &ev) == -1) {
+									if((errno != EEXIST)||(epoll_ctl(db->epollfd, EPOLL_CTL_MOD, context->sock, &ev) == -1)) {
+											log__printf(NULL, MOSQ_LOG_DEBUG, "Error in epoll re-registering to EPOLLOUT: %s", strerror(errno));
+									}
+								}
+								context->events = EPOLLIN | EPOLLOUT;
+							}
+							context->ws_want_write = false;
+						}
+						else{
+							if(context->events & EPOLLOUT) {
+								ev.data.fd = context->sock;
+								ev.events = EPOLLIN;
+								if(epoll_ctl(db->epollfd, EPOLL_CTL_ADD, context->sock, &ev) == -1) {
+									if((errno != EEXIST)||(epoll_ctl(db->epollfd, EPOLL_CTL_MOD, context->sock, &ev) == -1)) {
+											log__printf(NULL, MOSQ_LOG_DEBUG, "Error in epoll re-registering to EPOLLIN: %s", strerror(errno));
+									}
+								}
+								context->events = EPOLLIN;
+							}
+						}
+#else
+						pollfds[pollfd_index].fd = context->sock;
+						pollfds[pollfd_index].events = POLLIN;
+						pollfds[pollfd_index].revents = 0;
+						if(context->current_out_packet || context->state == mosq_cs_connect_pending || context->ws_want_write)
+						{
+							pollfds[pollfd_index].events |= POLLOUT;
+							context->ws_want_write = false;
+						}
+						context->pollfd_index = pollfd_index;
+						pollfd_index++;
+#endif
+					}else
+					{
+						do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
+					}
+				}else
+				{
+					/* Client has exceeded keepalive*1.5 */
+					do_disconnect(db, context, MOSQ_ERR_KEEPALIVE);
+				}
+			}
+		} // HASH_ITER END 
+		}
+
 
 #ifndef WIN32
 		sigprocmask(SIG_SETMASK, &sigblock, &origsig);
@@ -1484,9 +2333,11 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 			}
 		}
 #else
-		if(fdcount == -1){
+		if(fdcount == -1)
+		{
 #  ifdef WIN32
-			if(pollfd_index == 0 && WSAGetLastError() == WSAEINVAL){
+			if(pollfd_index == 0 && WSAGetLastError() == WSAEINVAL)
+			{
 				/* WSAPoll() immediately returns an error if it is not given
 				 * any sockets to wait on. This can happen if we only have
 				 * websockets listeners. Sleep a little to prevent a busy loop.
@@ -1497,32 +2348,37 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 			{
 				log__printf(NULL, MOSQ_LOG_ERR, "Error in poll: %s.", strerror(errno));
 			}
-		}else{
+		}else
+		{
 			loop_handle_reads_writes(db, pollfds);
-			/*else
-			{
-				for(i=0; i<listensock_count; i++){ // first two listen sockets
-					if(pollfds[i].revents & (POLLIN | POLLPRI)){
-						while(net__socket_accept(db, listensock[i]) != -1){
-						}
+			WaitForSingleObject(db->socket_mutex, INFINITE);
+			for(i=0; i<listensock_count; i++){ // first two listen sockets
+				if(pollfds[i].revents & (POLLIN | POLLPRI)){
+					while(net__socket_accept(db, listensock[i]) != NULL){
 					}
 				}
-				continue;
-			}*/
+			}
+			ReleaseMutex(db->socket_mutex);
 		}
+		
 #endif
 		now = time(NULL);
 		session_expiry__check(db, now);
 		will_delay__check(db, now);
 #ifdef WITH_PERSISTENCE
-		if(db->config->persistence && db->config->autosave_interval){
-			if(db->config->autosave_on_changes){
-				if(db->persistence_changes >= db->config->autosave_interval){
+		if(db->config->persistence && db->config->autosave_interval)
+		{
+			if(db->config->autosave_on_changes)
+			{
+				if(db->persistence_changes >= db->config->autosave_interval)
+				{
 					persist__backup(db, false);
 					db->persistence_changes = 0;
 				}
-			}else{
-				if(last_backup + db->config->autosave_interval < mosquitto_time()){
+			}else
+			{
+				if(last_backup + db->config->autosave_interval < mosquitto_time())
+				{
 					persist__backup(db, false);
 					last_backup = mosquitto_time();
 				}
@@ -1531,12 +2387,14 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 #endif
 
 #ifdef WITH_PERSISTENCE
-		if(flag_db_backup){
+		if(flag_db_backup)
+		{
 			persist__backup(db, false);
 			flag_db_backup = false;
 		}
 #endif
-		if(flag_reload){
+		if(flag_reload)
+		{
 			log__printf(NULL, MOSQ_LOG_INFO, "Reloading config.");
 			config__read(db, db->config, true);
 			mosquitto_security_cleanup(db, true);
@@ -1546,17 +2404,20 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 			log__init(db->config);
 			flag_reload = false;
 		}
-		if(flag_tree_print){
+		if(flag_tree_print)
+		{
 			sub__tree_print(db->subs, 0);
 			flag_tree_print = false;
 		}
 #ifdef WITH_WEBSOCKETS
-		for(i=0; i<db->config->listener_count; i++){
+		for(i=0; i<db->config->listener_count; i++)
+		{
 			/* Extremely hacky, should be using the lws provided external poll
 			 * interface, but their interface has changed recently and ours
 			 * will soon, so for now websockets clients are second class
 			 * citizens. */
-			if(db->config->listeners[i].ws_context){
+			if(db->config->listeners[i].ws_context)
+			{
 #if LWS_LIBRARY_VERSION_NUMBER > 3002000
 				libwebsocket_service(db->config->listeners[i].ws_context, -1);
 #elif LWS_LIBRARY_VERSION_NUMBER == 3002000
@@ -1568,7 +2429,8 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 
 			}
 		}
-		if(db->config->have_websockets_listener){
+		if(db->config->have_websockets_listener)
+		{
 			temp__expire_websockets_clients(db);
 		}
 #endif
@@ -1585,5 +2447,5 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 #endif
 	return MOSQ_ERR_SUCCESS;
 	
-}
+	}
 
