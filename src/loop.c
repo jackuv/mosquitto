@@ -902,7 +902,7 @@ int mosquitto_main_loop_threaded(struct mosquitto_db *db, mosq_sock_t *listensoc
 	DWORD   dwThreadIdArray[MAX_THREADS];
 	HANDLE  hThreadArray[MAX_THREADS]; 
 
-	int pollfd_max = 64000;
+	int pollfd_max = 104000;
 	int index = 0;
 	int size = pollfd_max / MAX_THREADS;
 	
@@ -974,7 +974,6 @@ int mosquitto_main_loop_threaded(struct mosquitto_db *db, mosq_sock_t *listensoc
 
 void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reason)
 {
-	
 	char *id;
 #ifdef WITH_EPOLL
 	struct epoll_event ev;
