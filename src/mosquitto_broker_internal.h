@@ -73,7 +73,7 @@ Contributors:
 
 #define TOPIC_HIERARCHY_LIMIT 200
 
-#define MAX_THREADS 4
+#define MAX_THREADS 8
 
 
 /* ========================================
@@ -445,11 +445,19 @@ struct mosquitto_db{
 	struct mosquitto *contexts_by_id1;
 	struct mosquitto *contexts_by_id2;
 	struct mosquitto *contexts_by_id3;
-	
+	struct mosquitto *contexts_by_id4;
+	struct mosquitto *contexts_by_id5;
+	struct mosquitto *contexts_by_id6;
+	struct mosquitto *contexts_by_id7;
+			
 	struct mosquitto *contexts_by_sock0;
 	struct mosquitto *contexts_by_sock1;
 	struct mosquitto *contexts_by_sock2;
 	struct mosquitto *contexts_by_sock3;
+	struct mosquitto *contexts_by_sock4;
+	struct mosquitto *contexts_by_sock5;
+	struct mosquitto *contexts_by_sock6;
+	struct mosquitto *contexts_by_sock7;
 #ifdef WITH_BRIDGE
 	struct mosquitto **bridges;
 #endif
@@ -471,7 +479,8 @@ struct mosquitto_db{
 	int retained_count;
 #endif
 	int persistence_changes;
-	struct mosquitto *ll_for_free;
+	struct mosquitto *ll_for_free[MAX_THREADS];
+	
 #ifdef WITH_EPOLL
 	int epollfd;
 #endif
@@ -677,7 +686,7 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock);
 void context__cleanup(struct mosquitto_db *db, struct mosquitto *context, bool do_free);
 void context__disconnect(struct mosquitto_db *db, struct mosquitto *context);
 void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context);
-void context__free_disused(struct mosquitto_db *db);
+void context__free_disused(struct mosquitto_db *db, int threadIndex);
 void context__send_will(struct mosquitto_db *db, struct mosquitto *context);
 void context__remove_from_by_id(struct mosquitto_db *db, struct mosquitto *context);
 

@@ -124,12 +124,20 @@ int db__open(struct mosquitto__config *config, struct mosquitto_db *db)
 	db->contexts_by_id1 = NULL;
 	db->contexts_by_id2 = NULL;
 	db->contexts_by_id3 = NULL;
+	db->contexts_by_id4 = NULL;
+	db->contexts_by_id5 = NULL;
+	db->contexts_by_id6 = NULL;
+	db->contexts_by_id7 = NULL;
 	
 	db->contexts_for_free = NULL;
 	db->contexts_by_sock0 = NULL;
 	db->contexts_by_sock1 = NULL;
 	db->contexts_by_sock2 = NULL;
 	db->contexts_by_sock3 = NULL;
+	db->contexts_by_sock4 = NULL;
+	db->contexts_by_sock5 = NULL;
+	db->contexts_by_sock6 = NULL;
+	db->contexts_by_sock7 = NULL;
 #ifdef WITH_BRIDGE
 	db->bridges = NULL;
 	db->bridge_count = 0;

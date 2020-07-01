@@ -132,7 +132,87 @@ static struct mosquitto *persist__find_or_add_context(struct mosquitto_db *db, c
 			context->last_mid = last_mid;
 		}
 	}
+	else if(threadIndex == 4)
+	{
+		HASH_FIND(hh_id4, db->contexts_by_id4, client_id, strlen(client_id), context);
+		if(!context){
+			context = context__init(db, -1);
+			if(!context) return NULL;
+			context->id = mosquitto__strdup(client_id);
+			if(!context->id){
+				mosquitto__free(context);
+				return NULL;
+			}
 
+			context->clean_start = false;
+
+			HASH_ADD_KEYPTR(hh_id4, db->contexts_by_id4, context->id, strlen(context->id), context);
+		}
+		if(last_mid){
+			context->last_mid = last_mid;
+		}
+	}
+	else if(threadIndex == 5)
+	{
+		HASH_FIND(hh_id5, db->contexts_by_id5, client_id, strlen(client_id), context);
+		if(!context){
+			context = context__init(db, -1);
+			if(!context) return NULL;
+			context->id = mosquitto__strdup(client_id);
+			if(!context->id){
+				mosquitto__free(context);
+				return NULL;
+			}
+
+			context->clean_start = false;
+
+			HASH_ADD_KEYPTR(hh_id5, db->contexts_by_id5, context->id, strlen(context->id), context);
+		}
+		if(last_mid){
+			context->last_mid = last_mid;
+		}
+	}
+	else if(threadIndex == 6)
+	{
+		HASH_FIND(hh_id6, db->contexts_by_id6, client_id, strlen(client_id), context);
+		if(!context){
+			context = context__init(db, -1);
+			if(!context) return NULL;
+			context->id = mosquitto__strdup(client_id);
+			if(!context->id){
+				mosquitto__free(context);
+				return NULL;
+			}
+
+			context->clean_start = false;
+
+			HASH_ADD_KEYPTR(hh_id6, db->contexts_by_id6, context->id, strlen(context->id), context);
+		}
+		if(last_mid){
+			context->last_mid = last_mid;
+		}
+	}
+	else if(threadIndex == 7)
+	{
+		HASH_FIND(hh_id7, db->contexts_by_id7, client_id, strlen(client_id), context);
+		if(!context){
+			context = context__init(db, -1);
+			if(!context) return NULL;
+			context->id = mosquitto__strdup(client_id);
+			if(!context->id){
+				mosquitto__free(context);
+				return NULL;
+			}
+
+			context->clean_start = false;
+
+			HASH_ADD_KEYPTR(hh_id7, db->contexts_by_id7, context->id, strlen(context->id), context);
+		}
+		if(last_mid){
+			context->last_mid = last_mid;
+		}
+	}
+	
 	return context;
 }
 

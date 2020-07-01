@@ -256,6 +256,94 @@ static int persist__client_save(struct mosquitto_db *db, FILE *db_fptr)
 			}
 		}
 	}
+	else if(threadIndex == 4)
+	{
+		HASH_ITER(hh_id4, db->contexts_by_id4, context, ctxt_tmp){
+			if(context && context->clean_start == false){
+				chunk.F.session_expiry_time = context->session_expiry_time;
+				chunk.F.session_expiry_interval = context->session_expiry_interval;
+				chunk.F.last_mid = context->last_mid;
+				chunk.F.id_len = strlen(context->id);
+				chunk.client_id = context->id;
+
+				rc = persist__chunk_client_write_v5(db_fptr, &chunk);
+				if(rc){
+					return rc;
+				}
+
+				if(persist__client_messages_save(db, db_fptr, context, context->msgs_in.inflight)) return 1;
+				if(persist__client_messages_save(db, db_fptr, context, context->msgs_in.queued)) return 1;
+				if(persist__client_messages_save(db, db_fptr, context, context->msgs_out.inflight)) return 1;
+				if(persist__client_messages_save(db, db_fptr, context, context->msgs_out.queued)) return 1;
+			}
+		}
+	}
+	else if(threadIndex == 5)
+	{
+		HASH_ITER(hh_id5, db->contexts_by_id5, context, ctxt_tmp){
+			if(context && context->clean_start == false){
+				chunk.F.session_expiry_time = context->session_expiry_time;
+				chunk.F.session_expiry_interval = context->session_expiry_interval;
+				chunk.F.last_mid = context->last_mid;
+				chunk.F.id_len = strlen(context->id);
+				chunk.client_id = context->id;
+
+				rc = persist__chunk_client_write_v5(db_fptr, &chunk);
+				if(rc){
+					return rc;
+				}
+
+				if(persist__client_messages_save(db, db_fptr, context, context->msgs_in.inflight)) return 1;
+				if(persist__client_messages_save(db, db_fptr, context, context->msgs_in.queued)) return 1;
+				if(persist__client_messages_save(db, db_fptr, context, context->msgs_out.inflight)) return 1;
+				if(persist__client_messages_save(db, db_fptr, context, context->msgs_out.queued)) return 1;
+			}
+		}
+	}
+	else if(threadIndex == 6)
+	{
+		HASH_ITER(hh_id6, db->contexts_by_id6, context, ctxt_tmp){
+			if(context && context->clean_start == false){
+				chunk.F.session_expiry_time = context->session_expiry_time;
+				chunk.F.session_expiry_interval = context->session_expiry_interval;
+				chunk.F.last_mid = context->last_mid;
+				chunk.F.id_len = strlen(context->id);
+				chunk.client_id = context->id;
+
+				rc = persist__chunk_client_write_v5(db_fptr, &chunk);
+				if(rc){
+					return rc;
+				}
+
+				if(persist__client_messages_save(db, db_fptr, context, context->msgs_in.inflight)) return 1;
+				if(persist__client_messages_save(db, db_fptr, context, context->msgs_in.queued)) return 1;
+				if(persist__client_messages_save(db, db_fptr, context, context->msgs_out.inflight)) return 1;
+				if(persist__client_messages_save(db, db_fptr, context, context->msgs_out.queued)) return 1;
+			}
+		}
+	}
+	else if(threadIndex == 7)
+	{
+		HASH_ITER(hh_id7, db->contexts_by_id7, context, ctxt_tmp){
+			if(context && context->clean_start == false){
+				chunk.F.session_expiry_time = context->session_expiry_time;
+				chunk.F.session_expiry_interval = context->session_expiry_interval;
+				chunk.F.last_mid = context->last_mid;
+				chunk.F.id_len = strlen(context->id);
+				chunk.client_id = context->id;
+
+				rc = persist__chunk_client_write_v5(db_fptr, &chunk);
+				if(rc){
+					return rc;
+				}
+
+				if(persist__client_messages_save(db, db_fptr, context, context->msgs_in.inflight)) return 1;
+				if(persist__client_messages_save(db, db_fptr, context, context->msgs_in.queued)) return 1;
+				if(persist__client_messages_save(db, db_fptr, context, context->msgs_out.inflight)) return 1;
+				if(persist__client_messages_save(db, db_fptr, context, context->msgs_out.queued)) return 1;
+			}
+		}
+	}
 	
 	return MOSQ_ERR_SUCCESS;
 }

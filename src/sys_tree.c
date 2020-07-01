@@ -69,11 +69,19 @@ static void sys_tree__update_clients(struct mosquitto_db *db, char *buf)
 	count_total += HASH_CNT(hh_id1, db->contexts_by_id1);
 	count_total += HASH_CNT(hh_id2, db->contexts_by_id2);
 	count_total += HASH_CNT(hh_id3, db->contexts_by_id3);
+	count_total += HASH_CNT(hh_id4, db->contexts_by_id4);
+	count_total += HASH_CNT(hh_id5, db->contexts_by_id5);
+	count_total += HASH_CNT(hh_id6, db->contexts_by_id6);
+	count_total += HASH_CNT(hh_id7, db->contexts_by_id7);
 		
 	count_by_sock = HASH_CNT(hh_sock0, db->contexts_by_sock0);
 	count_by_sock += HASH_CNT(hh_sock1, db->contexts_by_sock1);
 	count_by_sock += HASH_CNT(hh_sock2, db->contexts_by_sock2);
 	count_by_sock += HASH_CNT(hh_sock3, db->contexts_by_sock3);
+	count_by_sock += HASH_CNT(hh_sock4, db->contexts_by_sock4);
+	count_by_sock += HASH_CNT(hh_sock5, db->contexts_by_sock5);
+	count_by_sock += HASH_CNT(hh_sock6, db->contexts_by_sock6);
+	count_by_sock += HASH_CNT(hh_sock7, db->contexts_by_sock7);
 
 	if(client_count != count_total){
 		client_count = count_total;

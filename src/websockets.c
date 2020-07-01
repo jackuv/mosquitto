@@ -258,6 +258,26 @@ static int callback_mqtt(struct libwebsocket_context *context,
 			{
 				HASH_ADD(hh_sock3, db->contexts_by_sock3, sock, sizeof(mosq->sock), mosq);		
 			}
+			else if(mosq->threadIndex == 4)
+			{
+				HASH_ADD(hh_sock4, db->contexts_by_sock4, sock, sizeof(mosq->sock), mosq);		
+			}
+			else if(mosq->threadIndex == 5)
+			{
+				HASH_ADD(hh_sock5, db->contexts_by_sock5, sock, sizeof(mosq->sock), mosq);		
+			}
+			else if(mosq->threadIndex == 6)
+			{
+				HASH_ADD(hh_sock6, db->contexts_by_sock6, sock, sizeof(mosq->sock), mosq);		
+			}
+			else if(mosq->threadIndex == 7)
+			{
+				HASH_ADD(hh_sock7, db->contexts_by_sock7, sock, sizeof(mosq->sock), mosq);		
+			}
+			else
+			{
+				return -1;
+			}
 			break;
 
 		case LWS_CALLBACK_CLOSED:
@@ -282,6 +302,22 @@ static int callback_mqtt(struct libwebsocket_context *context,
 					else if(mosq->threadIndex == 3)
 					{
 						HASH_DELETE(hh_sock3, db->contexts_by_sock3, mosq);
+					}
+					else if(mosq->threadIndex == 4)
+					{
+						HASH_DELETE(hh_sock4, db->contexts_by_sock4, mosq);
+					}
+					else if(mosq->threadIndex == 5)
+					{
+						HASH_DELETE(hh_sock5, db->contexts_by_sock5, mosq);
+					}
+					else if(mosq->threadIndex == 6)
+					{
+						HASH_DELETE(hh_sock6, db->contexts_by_sock6, mosq);
+					}
+					else if(mosq->threadIndex == 7)
+					{
+						HASH_DELETE(hh_sock7, db->contexts_by_sock7, mosq);
 					}
 										
 					mosq->sock = INVALID_SOCKET;
@@ -711,7 +747,15 @@ static int callback_http(struct libwebsocket_context *context,
 				HASH_FIND(hh_sock2, db->contexts_by_sock2, &pollargs->fd, sizeof(pollargs->fd), mosq);
 			if(!mosq)
 				HASH_FIND(hh_sock3, db->contexts_by_sock3, &pollargs->fd, sizeof(pollargs->fd), mosq);
-		
+			if(!mosq)
+				HASH_FIND(hh_sock4, db->contexts_by_sock4, &pollargs->fd, sizeof(pollargs->fd), mosq);
+			if(!mosq)
+				HASH_FIND(hh_sock5, db->contexts_by_sock5, &pollargs->fd, sizeof(pollargs->fd), mosq);	
+			if(!mosq)
+				HASH_FIND(hh_sock6, db->contexts_by_sock6, &pollargs->fd, sizeof(pollargs->fd), mosq);
+			if(!mosq)
+				HASH_FIND(hh_sock7, db->contexts_by_sock7, &pollargs->fd, sizeof(pollargs->fd), mosq);
+					
 			if(mosq && (pollargs->events & POLLOUT)){
 				mosq->ws_want_write = true;
 			}

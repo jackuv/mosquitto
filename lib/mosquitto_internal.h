@@ -347,11 +347,19 @@ struct mosquitto {
 	UT_hash_handle hh_id1;
 	UT_hash_handle hh_id2;
 	UT_hash_handle hh_id3;
+	UT_hash_handle hh_id4;
+	UT_hash_handle hh_id5;
+	UT_hash_handle hh_id6;
+	UT_hash_handle hh_id7;
 		
 	UT_hash_handle hh_sock0;
 	UT_hash_handle hh_sock1;
 	UT_hash_handle hh_sock2;
 	UT_hash_handle hh_sock3;
+	UT_hash_handle hh_sock4;
+	UT_hash_handle hh_sock5;
+	UT_hash_handle hh_sock6;
+	UT_hash_handle hh_sock7;
 #endif
 #ifdef WITH_EPOLL
 	uint32_t events;

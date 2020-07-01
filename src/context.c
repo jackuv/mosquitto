@@ -107,6 +107,22 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock)
 		{
 			HASH_ADD(hh_sock3, db->contexts_by_sock3, sock, sizeof(context->sock), context);
 		}
+		else if(threadIndex == 4)
+		{
+			HASH_ADD(hh_sock4, db->contexts_by_sock4, sock, sizeof(context->sock), context);
+		}
+		else if(threadIndex == 5)
+		{
+			HASH_ADD(hh_sock5, db->contexts_by_sock5, sock, sizeof(context->sock), context);
+		}
+		else if(threadIndex == 6)
+		{
+			HASH_ADD(hh_sock6, db->contexts_by_sock6, sock, sizeof(context->sock), context);
+		}
+		else if(threadIndex == 7)
+		{
+			HASH_ADD(hh_sock7, db->contexts_by_sock7, sock, sizeof(context->sock), context);
+		}
 		
 	}
 	return context;
@@ -126,7 +142,7 @@ void context__cleanup(struct mosquitto_db *db, struct mosquitto *context, bool d
 #endif
 
 	if(!context) return;
-
+		
 #ifdef WITH_BRIDGE
 	if(context->bridge){
 		for(i=0; i<db->bridge_count; i++){
@@ -212,6 +228,7 @@ void context__cleanup(struct mosquitto_db *db, struct mosquitto *context, bool d
 	if(do_free){
 		mosquitto__free(context);
 	}
+	
 }
 
 
@@ -275,6 +292,7 @@ void context__disconnect(struct mosquitto_db *db, struct mosquitto *context)
 
 void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context)
 {
+	int threadIndex = context->threadIndex;
 	if(context->state == mosq_cs_disused) return;
 
 	mosquitto__set_state(context, mosq_cs_disused);
@@ -285,20 +303,22 @@ void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context)
 		context->id = NULL;
 	}
 
-	context->for_free_next = db->ll_for_free;
-	db->ll_for_free = context;
+	context->for_free_next = db->ll_for_free[threadIndex];
+	db->ll_for_free[threadIndex] = context;
 }
 
-void context__free_disused(struct mosquitto_db *db)
+void context__free_disused(struct mosquitto_db *db, int threadIndex)
 {
+	WaitForSingleObject(db->socket_mutex, INFINITE);
+	
 	struct mosquitto *context, *next;
 #ifdef WITH_WEBSOCKETS
 	struct mosquitto *last = NULL;
 #endif
 	assert(db);
 
-	context = db->ll_for_free;
-	db->ll_for_free = NULL;
+	context = db->ll_for_free[threadIndex];
+	db->ll_for_free[threadIndex] = NULL;
 
 	while(context){
 #ifdef WITH_WEBSOCKETS
@@ -307,7 +327,7 @@ void context__free_disused(struct mosquitto_db *db)
 			if(last){
 				last->for_free_next = context;
 			}else{
-				db->ll_for_free = context;
+				db->ll_for_free[threadIndex] = context;
 			}
 			next = context->for_free_next;
 			context->for_free_next = NULL;
@@ -321,6 +341,7 @@ void context__free_disused(struct mosquitto_db *db)
 			context = next;
 		}
 	}
+	ReleaseMutex(db->socket_mutex);
 }
 
 
@@ -351,6 +372,34 @@ void context__remove_from_by_id(struct mosquitto_db *db, struct mosquitto *conte
 	{
 		if(context->removed_from_by_id == false && context->id){
 			HASH_DELETE(hh_id3, db->contexts_by_id3, context);
+			context->removed_from_by_id = true;
+		}
+	}
+	else if(context->threadIndex == 4)
+	{
+		if(context->removed_from_by_id == false && context->id){
+			HASH_DELETE(hh_id4, db->contexts_by_id4, context);
+			context->removed_from_by_id = true;
+		}
+	}
+	else if(context->threadIndex == 5)
+	{
+		if(context->removed_from_by_id == false && context->id){
+			HASH_DELETE(hh_id5, db->contexts_by_id5, context);
+			context->removed_from_by_id = true;
+		}
+	}
+	else if(context->threadIndex == 6)
+	{
+		if(context->removed_from_by_id == false && context->id){
+			HASH_DELETE(hh_id6, db->contexts_by_id6, context);
+			context->removed_from_by_id = true;
+		}
+	}
+	else if(context->threadIndex == 7)
+	{
+		if(context->removed_from_by_id == false && context->id){
+			HASH_DELETE(hh_id7, db->contexts_by_id7, context);
 			context->removed_from_by_id = true;
 		}
 	}

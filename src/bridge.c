@@ -50,6 +50,9 @@ static void bridge__backoff_reset(struct mosquitto *context);
 int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 {
 	int threadIndex = getThreadIndex(db);
+	if(threadIndex < 0 || threadIndex > MAX_THREADS)
+		return 1;
+	
 	struct mosquitto *new_context = NULL;
 	struct mosquitto **bridges;
 	char *local_id;
@@ -75,6 +78,22 @@ int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 	{
 		HASH_FIND(hh_id3, db->contexts_by_id3, local_id, strlen(local_id), new_context);
 	}
+	else if(threadIndex == 4)
+	{
+		HASH_FIND(hh_id4, db->contexts_by_id4, local_id, strlen(local_id), new_context);
+	}
+	else if(threadIndex == 5)
+	{
+		HASH_FIND(hh_id5, db->contexts_by_id5, local_id, strlen(local_id), new_context);
+	}
+	else if(threadIndex == 6)
+	{
+		HASH_FIND(hh_id6, db->contexts_by_id6, local_id, strlen(local_id), new_context);
+	}
+	else if(threadIndex == 7)
+	{
+		HASH_FIND(hh_id7, db->contexts_by_id7, local_id, strlen(local_id), new_context);
+	}
 		
 	if(new_context){
 		/* (possible from persistent db) */
@@ -87,6 +106,7 @@ int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 			return MOSQ_ERR_NOMEM;
 		}
 		new_context->id = local_id;
+		new_context->threadIndex = threadIndex;
 		
 		if(threadIndex == 0)
 		{
@@ -103,6 +123,22 @@ int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 		else if(threadIndex == 3)
 		{
 			HASH_ADD_KEYPTR(hh_id3, db->contexts_by_id3, new_context->id, strlen(new_context->id), new_context);
+		}
+		else if(threadIndex == 4)
+		{
+			HASH_ADD_KEYPTR(hh_id4, db->contexts_by_id4, new_context->id, strlen(new_context->id), new_context);
+		}
+		else if(threadIndex == 5)
+		{
+			HASH_ADD_KEYPTR(hh_id5, db->contexts_by_id5, new_context->id, strlen(new_context->id), new_context);
+		}
+		else if(threadIndex == 6)
+		{
+			HASH_ADD_KEYPTR(hh_id6, db->contexts_by_id6, new_context->id, strlen(new_context->id), new_context);
+		}
+		else if(threadIndex == 7)
+		{
+			HASH_ADD_KEYPTR(hh_id7, db->contexts_by_id7, new_context->id, strlen(new_context->id), new_context);
 		}
 	}
 	new_context->bridge = bridge;
@@ -454,6 +490,22 @@ int bridge__connect(struct mosquitto_db *db, struct mosquitto *context)
 	else if(threadIndex == 3)
 	{
 		HASH_ADD(hh_sock3, db->contexts_by_sock3, sock, sizeof(context->sock), context);
+	}
+	else if(threadIndex == 4)
+	{
+		HASH_ADD(hh_sock4, db->contexts_by_sock4, sock, sizeof(context->sock), context);
+	}
+	else if(threadIndex == 5)
+	{
+		HASH_ADD(hh_sock5, db->contexts_by_sock5, sock, sizeof(context->sock), context);
+	}
+	else if(threadIndex == 6)
+	{
+		HASH_ADD(hh_sock6, db->contexts_by_sock6, sock, sizeof(context->sock), context);
+	}
+	else if(threadIndex == 7)
+	{
+		HASH_ADD(hh_sock7, db->contexts_by_sock7, sock, sizeof(context->sock), context);
 	}
 
 

@@ -404,6 +404,18 @@ int main(int argc, char *argv[])
 	HASH_ITER(hh_id3, int_db.contexts_by_id3, ctxt, ctxt_tmp){
 		context__send_will(&int_db, ctxt);
 	}
+	HASH_ITER(hh_id4, int_db.contexts_by_id4, ctxt, ctxt_tmp){
+		context__send_will(&int_db, ctxt);
+	}
+	HASH_ITER(hh_id5, int_db.contexts_by_id5, ctxt, ctxt_tmp){
+		context__send_will(&int_db, ctxt);
+	}
+	HASH_ITER(hh_id6, int_db.contexts_by_id6, ctxt, ctxt_tmp){
+		context__send_will(&int_db, ctxt);
+	}
+	HASH_ITER(hh_id7, int_db.contexts_by_id7, ctxt, ctxt_tmp){
+		context__send_will(&int_db, ctxt);
+	}
 	
 	will_delay__send_all(&int_db);
 
@@ -453,8 +465,48 @@ int main(int argc, char *argv[])
 		context__cleanup(&int_db, ctxt, true);
 #endif
 	}
-	
-	
+
+	HASH_ITER(hh_id4, int_db.contexts_by_id4, ctxt, ctxt_tmp){
+#ifdef WITH_WEBSOCKETS
+		if(!ctxt->wsi){
+			context__cleanup(&int_db, ctxt, true);
+		}
+#else
+		context__cleanup(&int_db, ctxt, true);
+#endif
+	}
+
+	HASH_ITER(hh_id5, int_db.contexts_by_id5, ctxt, ctxt_tmp){
+#ifdef WITH_WEBSOCKETS
+		if(!ctxt->wsi){
+			context__cleanup(&int_db, ctxt, true);
+		}
+#else
+		context__cleanup(&int_db, ctxt, true);
+#endif
+	}
+
+	HASH_ITER(hh_id6, int_db.contexts_by_id6, ctxt, ctxt_tmp){
+#ifdef WITH_WEBSOCKETS
+		if(!ctxt->wsi){
+			context__cleanup(&int_db, ctxt, true);
+		}
+#else
+		context__cleanup(&int_db, ctxt, true);
+#endif
+	}
+
+	HASH_ITER(hh_id7, int_db.contexts_by_id7, ctxt, ctxt_tmp){
+#ifdef WITH_WEBSOCKETS
+		if(!ctxt->wsi){
+			context__cleanup(&int_db, ctxt, true);
+		}
+#else
+		context__cleanup(&int_db, ctxt, true);
+#endif
+	}
+
+		
 	HASH_ITER(hh_sock0, int_db.contexts_by_sock0, ctxt, ctxt_tmp){
 		context__cleanup(&int_db, ctxt, true);
 	}
@@ -467,6 +519,19 @@ int main(int argc, char *argv[])
 	HASH_ITER(hh_sock3, int_db.contexts_by_sock3, ctxt, ctxt_tmp){
 		context__cleanup(&int_db, ctxt, true);
 	}
+	HASH_ITER(hh_sock4, int_db.contexts_by_sock4, ctxt, ctxt_tmp){
+		context__cleanup(&int_db, ctxt, true);
+	}
+	HASH_ITER(hh_sock5, int_db.contexts_by_sock5, ctxt, ctxt_tmp){
+		context__cleanup(&int_db, ctxt, true);
+	}
+	HASH_ITER(hh_sock6, int_db.contexts_by_sock6, ctxt, ctxt_tmp){
+		context__cleanup(&int_db, ctxt, true);
+	}
+	HASH_ITER(hh_sock7, int_db.contexts_by_sock7, ctxt, ctxt_tmp){
+		context__cleanup(&int_db, ctxt, true);
+	}
+	
 #ifdef WITH_BRIDGE
 	for(i=0; i<int_db.bridge_count; i++){
 		if(int_db.bridges[i]){
@@ -475,7 +540,8 @@ int main(int argc, char *argv[])
 	}
 	mosquitto__free(int_db.bridges);
 #endif
-	context__free_disused(&int_db);
+	for(i=0; i<MAX_THREADS; i++)
+		context__free_disused(&int_db, i);
 
 	db__close(&int_db);
 

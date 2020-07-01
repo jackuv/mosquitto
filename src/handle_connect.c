@@ -194,7 +194,24 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 	else if(threadIndex == 3)
 	{
 		HASH_FIND(hh_id3, db->contexts_by_id3, context->id, strlen(context->id), found_context);
-	} else
+	}
+	else if(threadIndex == 4)
+	{
+		HASH_FIND(hh_id4, db->contexts_by_id4, context->id, strlen(context->id), found_context);
+	}
+	else if(threadIndex == 5)
+	{
+		HASH_FIND(hh_id5, db->contexts_by_id5, context->id, strlen(context->id), found_context);
+	}
+	else if(threadIndex == 6)
+	{
+		HASH_FIND(hh_id6, db->contexts_by_id6, context->id, strlen(context->id), found_context);
+	}
+	else if(threadIndex == 7)
+	{
+		HASH_FIND(hh_id7, db->contexts_by_id7, context->id, strlen(context->id), found_context);
+	}
+	else
 	{
 		return 1;
 	}
@@ -322,6 +339,22 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 	else if(context->threadIndex == 3)
 	{
 		HASH_ADD_KEYPTR(hh_id3, db->contexts_by_id3, context->id, strlen(context->id), context);
+	}
+	else if(context->threadIndex == 4)
+	{
+		HASH_ADD_KEYPTR(hh_id4, db->contexts_by_id4, context->id, strlen(context->id), context);
+	}
+	else if(context->threadIndex == 5)
+	{
+		HASH_ADD_KEYPTR(hh_id5, db->contexts_by_id5, context->id, strlen(context->id), context);
+	}
+	else if(context->threadIndex == 6)
+	{
+		HASH_ADD_KEYPTR(hh_id6, db->contexts_by_id6, context->id, strlen(context->id), context);
+	}
+	else if(context->threadIndex == 7)
+	{
+		HASH_ADD_KEYPTR(hh_id7, db->contexts_by_id7, context->id, strlen(context->id), context);
 	}
 	
 
