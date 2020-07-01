@@ -236,6 +236,22 @@ int net__socket_close(struct mosquitto *mosq)
 			{
 				HASH_DELETE(hh_sock3, db->contexts_by_sock3, mosq);
 			}
+			else if(mosq->threadIndex == 4)
+			{
+				HASH_DELETE(hh_sock4, db->contexts_by_sock4, mosq);
+			}
+			else if(mosq->threadIndex == 5)
+			{
+				HASH_DELETE(hh_sock5, db->contexts_by_sock5, mosq);
+			}
+			else if(mosq->threadIndex == 6)
+			{
+				HASH_DELETE(hh_sock6, db->contexts_by_sock6, mosq);
+			}
+			else if(mosq->threadIndex == 7)
+			{
+				HASH_DELETE(hh_sock7, db->contexts_by_sock7, mosq);
+			}
 
 			
 #endif
