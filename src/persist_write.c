@@ -93,66 +93,78 @@ static int persist__message_store_save(struct mosquitto_db *db, FILE *db_fptr)
 
 	memset(&chunk, 0, sizeof(struct P_msg_store));
 
-	stored = db->msg_store;
-	while(stored){
-		if(stored->ref_count < 1 || stored->topic == NULL){
-			stored = stored->next;
-			continue;
-		}
-
-		if(!strncmp(stored->topic, "$SYS", 4)){
-			if(stored->ref_count <= 1 && stored->dest_id_count == 0){
-				/* $SYS messages that are only retained shouldn't be persisted. */
+	int i = 0;
+	int max = MAX_THREADS;
+	int threadIndex = getThreadIndex(db);
+	if(threadIndex > -1 && threadIndex < MAX_THREADS)
+	{
+		i = threadIndex;
+		max = i + 1;
+	}
+	
+	for(int j = i; j < max; j++)
+	{
+		stored = db->msg_store[j];
+		while(stored){
+			if(stored->ref_count < 1 || stored->topic == NULL){
 				stored = stored->next;
 				continue;
 			}
-			/* Don't save $SYS messages as retained otherwise they can give
-			 * misleading information when reloaded. They should still be saved
-			 * because a disconnected durable client may have them in their
-			 * queue. */
-			chunk.F.retain = 0;
-		}else{
-			chunk.F.retain = (uint8_t)stored->retain;
-		}
 
-		chunk.F.store_id = stored->db_id;
-		chunk.F.expiry_time = stored->message_expiry_time;
-		chunk.F.payloadlen = stored->payloadlen;
-		chunk.F.source_mid = stored->source_mid;
-		if(stored->source_id){
-			chunk.F.source_id_len = strlen(stored->source_id);
-			chunk.source.id = stored->source_id;
-		}else{
-			chunk.F.source_id_len = 0;
-			chunk.source.id = NULL;
-		}
-		if(stored->source_username){
-			chunk.F.source_username_len = strlen(stored->source_username);
-			chunk.source.username = stored->source_username;
-		}else{
-			chunk.F.source_username_len = 0;
-			chunk.source.username = NULL;
-		}
+			if(!strncmp(stored->topic, "$SYS", 4)){
+				if(stored->ref_count <= 1 && stored->dest_id_count == 0){
+					/* $SYS messages that are only retained shouldn't be persisted. */
+					stored = stored->next;
+					continue;
+				}
+				/* Don't save $SYS messages as retained otherwise they can give
+				 * misleading information when reloaded. They should still be saved
+				 * because a disconnected durable client may have them in their
+				 * queue. */
+				chunk.F.retain = 0;
+			}else{
+				chunk.F.retain = (uint8_t)stored->retain;
+			}
 
-		chunk.F.topic_len = strlen(stored->topic);
-		chunk.topic = stored->topic;
+			chunk.F.store_id = stored->db_id;
+			chunk.F.expiry_time = stored->message_expiry_time;
+			chunk.F.payloadlen = stored->payloadlen;
+			chunk.F.source_mid = stored->source_mid;
+			if(stored->source_id){
+				chunk.F.source_id_len = strlen(stored->source_id);
+				chunk.source.id = stored->source_id;
+			}else{
+				chunk.F.source_id_len = 0;
+				chunk.source.id = NULL;
+			}
+			if(stored->source_username){
+				chunk.F.source_username_len = strlen(stored->source_username);
+				chunk.source.username = stored->source_username;
+			}else{
+				chunk.F.source_username_len = 0;
+				chunk.source.username = NULL;
+			}
 
-		if(stored->source_listener){
-			chunk.F.source_port = stored->source_listener->port;
-		}else{
-			chunk.F.source_port = 0;
-		}
-		chunk.F.qos = stored->qos;
-		chunk.payload = stored->payload;
-		chunk.properties = stored->properties;
+			chunk.F.topic_len = strlen(stored->topic);
+			chunk.topic = stored->topic;
 
-		rc = persist__chunk_message_store_write_v5(db_fptr, &chunk);
-		if(rc){
-			return rc;
+			if(stored->source_listener){
+				chunk.F.source_port = stored->source_listener->port;
+			}else{
+				chunk.F.source_port = 0;
+			}
+			chunk.F.qos = stored->qos;
+			chunk.payload = stored->payload;
+			chunk.properties = stored->properties;
+
+			rc = persist__chunk_message_store_write_v5(db_fptr, &chunk);
+			if(rc){
+				return rc;
+			}
+			stored = stored->next;
 		}
-		stored = stored->next;
 	}
-
+		
 	return MOSQ_ERR_SUCCESS;
 }
 

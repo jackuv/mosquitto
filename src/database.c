@@ -197,17 +197,21 @@ int db__close(struct mosquitto_db *db)
 
 void db__msg_store_add(struct mosquitto_db *db, struct mosquitto_msg_store *store)
 {
-	store->next = db->msg_store;
+	int threadIndex = getThreadIndex(db);
+		
+	store->next = db->msg_store[threadIndex];
 	store->prev = NULL;
-	if(db->msg_store){
-		db->msg_store->prev = store;
+	if(db->msg_store[threadIndex]){
+		db->msg_store[threadIndex]->prev = store;
 	}
-	db->msg_store = store;
+	db->msg_store[threadIndex] = store;
 }
 
 
 void db__msg_store_remove(struct mosquitto_db *db, struct mosquitto_msg_store *store)
 {
+	int threadIndex = getThreadIndex(db);
+	
 	int i;
 
 	if(store->prev){
@@ -216,7 +220,7 @@ void db__msg_store_remove(struct mosquitto_db *db, struct mosquitto_msg_store *s
 			store->next->prev = store->prev;
 		}
 	}else{
-		db->msg_store = store->next;
+		db->msg_store[threadIndex] = store->next;
 		if(store->next){
 			store->next->prev = NULL;
 		}
@@ -241,13 +245,16 @@ void db__msg_store_remove(struct mosquitto_db *db, struct mosquitto_msg_store *s
 
 void db__msg_store_clean(struct mosquitto_db *db)
 {
-	struct mosquitto_msg_store *store, *next;;
+	struct mosquitto_msg_store *store, *next;
 
-	store = db->msg_store;
-	while(store){
-		next = store->next;
-		db__msg_store_remove(db, store);
-		store = next;
+	for(int i=0; i< MAX_THREADS; i++)
+	{
+		store = db->msg_store[i];
+		while(store){
+			next = store->next;
+			db__msg_store_remove(db, store);
+			store = next;
+		}	
 	}
 }
 
@@ -270,13 +277,16 @@ void db__msg_store_compact(struct mosquitto_db *db)
 {
 	struct mosquitto_msg_store *store, *next;
 
-	store = db->msg_store;
-	while(store){
-		next = store->next;
-		if(store->ref_count < 1){
-			db__msg_store_remove(db, store);
-		}
-		store = next;
+	for(int i=0; i<MAX_THREADS; i++)
+	{
+		store = db->msg_store[i];
+		while(store){
+			next = store->next;
+			if(store->ref_count < 1){
+				db__msg_store_remove(db, store);
+			}
+			store = next;
+		}				
 	}
 }
 

@@ -342,7 +342,7 @@ int getThreadIndex(struct mosquitto_db *db)
 			break;
 
 	if(i == MAX_THREADS)
-		ExitProcess(1);
+		return -1;
 
 	return i;
 }

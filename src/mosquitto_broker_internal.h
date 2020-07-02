@@ -462,13 +462,13 @@ struct mosquitto_db{
 	struct mosquitto **bridges;
 #endif
 	struct clientid__index_hash *clientid_index_hash;
-	struct mosquitto_msg_store *msg_store;
+	struct mosquitto_msg_store *msg_store[MAX_THREADS];
 	struct mosquitto_msg_store_load *msg_store_load;
 #ifdef WITH_BRIDGE
 	int bridge_count;
 #endif
-	int msg_store_count;
-	unsigned long msg_store_bytes;
+	volatile int msg_store_count;
+	volatile unsigned long msg_store_bytes;
 	char *config_file;
 	struct mosquitto__config *config;
 	int auth_plugin_count;
