@@ -198,6 +198,8 @@ int db__close(struct mosquitto_db *db)
 void db__msg_store_add(struct mosquitto_db *db, struct mosquitto_msg_store *store)
 {
 	int threadIndex = getThreadIndex(db);
+	if(threadIndex == -1)
+		threadIndex = 0;
 		
 	store->next = db->msg_store[threadIndex];
 	store->prev = NULL;
@@ -211,6 +213,8 @@ void db__msg_store_add(struct mosquitto_db *db, struct mosquitto_msg_store *stor
 void db__msg_store_remove(struct mosquitto_db *db, struct mosquitto_msg_store *store)
 {
 	int threadIndex = getThreadIndex(db);
+	if(threadIndex < 0)
+		threadIndex = 0;
 	
 	int i;
 
