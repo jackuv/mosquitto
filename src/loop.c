@@ -1101,6 +1101,9 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, mosq_sock_t sock, 
 static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pollfds) // read write + pings
 #endif
 {
+	/*WaitForSingleObject(db->socket_mutex, INFINITE);
+	ReleaseMutex(db->socket_mutex);	*/
+	
 	int threadIndex = getThreadIndex(db);
 	struct mosquitto *context;
 #ifndef WITH_EPOLL
