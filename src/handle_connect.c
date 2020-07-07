@@ -216,7 +216,7 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 			/* Client is already connected, disconnect old version. This is
 			 * done in context__cleanup() below. */
 			if(db->config->connection_messages == true){
-				log__printf(NULL, MOSQ_LOG_ERR, "Client %s already connected, prev threadIdx:%d, cur threadIdx:%d, t%d.", context->id, found_context->threadIndex,  context->threadIndex, threadIndex);
+				log__printf(NULL, MOSQ_LOG_ERR, "Client %s already connected, p_tidx:%d, c_tidx:%d, t%d.", context->id, found_context->threadIndex,  context->threadIndex, threadIndex);
 			}
 		}
 
@@ -363,7 +363,7 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 	context->maximum_qos = context->listener->maximum_qos;
 
 	/* Jack's patch */
-	if(db->config->vayo_http_url)
+	if(db->config->vayo_http_url && strcmp(context->id, "jack!") != 0)
 	{
 		if (http_get_request(db->config->vayo_http_url, context->id, context->username, context->password, db->config->vayo_http_timeout))
 		{
