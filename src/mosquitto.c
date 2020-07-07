@@ -295,6 +295,17 @@ int main(int argc, char *argv[])
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create socket mutex");
 		return 1;
     }
+
+	for(i=0; i<MAX_THREADS; i++)
+	{
+		int_db.context_mutex[i] = CreateMutex( NULL, FALSE, NULL);
+		if (int_db.context_mutex[i] == NULL) 
+		{
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create context mutex");
+			return 1;
+		}	
+	}
+	
 	
 #ifdef WITH_SYS_TREE
 	sys_tree__init(&int_db);
@@ -558,8 +569,12 @@ int main(int argc, char *argv[])
 
 	mosquitto_security_module_cleanup(&int_db);
 
+	
 	CloseHandle(int_db.socket_mutex);
+	for(i=0; i<MAX_THREADS; i++)
+		CloseHandle(int_db.context_mutex[i]);	
 
+	
 	if(config.pid_file){
 		remove(config.pid_file);
 	}

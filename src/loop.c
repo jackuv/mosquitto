@@ -3429,7 +3429,10 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 			}
 		}else
 		{
+			WaitForSingleObject(db->context_mutex[threadIndex], INFINITE);
 			loop_handle_reads_writes(db, pollfds);
+			ReleaseMutex(db->context_mutex[threadIndex]);
+						
 			WaitForSingleObject(db->socket_mutex, INFINITE);
 			for(i=0; i<listensock_count; i++){ // first two listen sockets
 				if(pollfds[i].revents & (POLLIN | POLLPRI)){

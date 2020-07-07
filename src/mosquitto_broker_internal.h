@@ -485,6 +485,7 @@ struct mosquitto_db{
 	int epollfd;
 #endif
 	HANDLE socket_mutex;
+	HANDLE context_mutex[MAX_THREADS];
 	DWORD threadIds[MAX_THREADS];
 };
 

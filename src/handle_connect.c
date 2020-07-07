@@ -179,44 +179,34 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 	int rc;
 
 	/* Find if this client already has an entry. This must be done *after* any security checks. */
-	if(threadIndex == 0)
-	{
-		HASH_FIND(hh_id0, db->contexts_by_id0, context->id, strlen(context->id), found_context);
-	}
-	else if(threadIndex == 1)
+	HASH_FIND(hh_id0, db->contexts_by_id0, context->id, strlen(context->id), found_context);
+	if(!found_context)
 	{
 		HASH_FIND(hh_id1, db->contexts_by_id1, context->id, strlen(context->id), found_context);
+		if(!found_context)
+		{
+			HASH_FIND(hh_id2, db->contexts_by_id2, context->id, strlen(context->id), found_context);
+			if(!found_context)
+			{
+				HASH_FIND(hh_id3, db->contexts_by_id3, context->id, strlen(context->id), found_context);
+				if(!found_context)
+				{
+					HASH_FIND(hh_id4, db->contexts_by_id4, context->id, strlen(context->id), found_context);
+					if(!found_context)
+					{
+						HASH_FIND(hh_id5, db->contexts_by_id5, context->id, strlen(context->id), found_context);
+						if(!found_context)
+						{
+							HASH_FIND(hh_id6, db->contexts_by_id6, context->id, strlen(context->id), found_context);
+							if(!found_context)
+								HASH_FIND(hh_id7, db->contexts_by_id7, context->id, strlen(context->id), found_context);
+						}
+					}
+				}
+			}	
+		}
 	}
-	else if(threadIndex == 2)
-	{
-		HASH_FIND(hh_id2, db->contexts_by_id2, context->id, strlen(context->id), found_context);
-	}
-	else if(threadIndex == 3)
-	{
-		HASH_FIND(hh_id3, db->contexts_by_id3, context->id, strlen(context->id), found_context);
-	}
-	else if(threadIndex == 4)
-	{
-		HASH_FIND(hh_id4, db->contexts_by_id4, context->id, strlen(context->id), found_context);
-	}
-	else if(threadIndex == 5)
-	{
-		HASH_FIND(hh_id5, db->contexts_by_id5, context->id, strlen(context->id), found_context);
-	}
-	else if(threadIndex == 6)
-	{
-		HASH_FIND(hh_id6, db->contexts_by_id6, context->id, strlen(context->id), found_context);
-	}
-	else if(threadIndex == 7)
-	{
-		HASH_FIND(hh_id7, db->contexts_by_id7, context->id, strlen(context->id), found_context);
-	}
-	else
-	{
-		return 1;
-	}
-	
-	
+			
 	if(found_context){
 		/* Found a matching client */
 		if(found_context->sock == INVALID_SOCKET){
@@ -226,10 +216,14 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 			/* Client is already connected, disconnect old version. This is
 			 * done in context__cleanup() below. */
 			if(db->config->connection_messages == true){
-				log__printf(NULL, MOSQ_LOG_ERR, "Client %s already connected, closing old connection.", context->id);
+				log__printf(NULL, MOSQ_LOG_ERR, "Client %s already connected, prev threadIdx:%d, cur threadIdx:%d, t%d.", context->id, found_context->threadIndex,  context->threadIndex, threadIndex);
 			}
 		}
 
+		int needWait = found_context->threadIndex != context->threadIndex;
+		if(needWait)
+			WaitForSingleObject(db->context_mutex[found_context->threadIndex], INFINITE);
+				
 		if(context->clean_start == false && found_context->session_expiry_interval > 0){
 			if(context->protocol == mosq_p_mqtt311 || context->protocol == mosq_p_mqtt5){
 				connect_ack |= 0x01;
@@ -276,6 +270,9 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 		found_context->session_expiry_interval = 0;
 		mosquitto__set_state(found_context, mosq_cs_duplicate);
 		do_disconnect(db, found_context, MOSQ_ERR_SUCCESS);
+
+		if(needWait)
+			ReleaseMutex(db->context_mutex[found_context->threadIndex]);
 	}
 
 	rc = acl__find_acls(db, context);
