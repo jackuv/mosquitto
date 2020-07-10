@@ -614,6 +614,7 @@ static int acl__cleanup(struct mosquitto_db *db, bool reload)
 	 * is called if we are reloading the config. If this is not done, all 
 	 * access will be denied to currently connected clients.
 	 */
+
 	if(threadIndex == 0)
 	{
 		HASH_ITER(hh_id0, db->contexts_by_id0, context, ctxt_tmp){
@@ -670,7 +671,7 @@ static int acl__cleanup(struct mosquitto_db *db, bool reload)
 	}else{
 		acl__cleanup_single(&db->config->security_options);
 	}
-
+		
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -2447,7 +2448,7 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 		}
 	}
 	}
-	
+		
 	return MOSQ_ERR_SUCCESS;
 }
 

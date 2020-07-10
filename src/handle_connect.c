@@ -170,6 +170,7 @@ int http_get_request(const char* fmtUrl, const char* id, const char* user, const
 
 int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, void *auth_data_out, uint16_t auth_data_out_len)
 {
+	WaitForSingleObject(db->id_mutex, INFINITE);
 	int threadIndex = getThreadIndex(db);
 	struct mosquitto *found_context;
 	struct mosquitto__subleaf *leaf;
@@ -179,35 +180,46 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 	int rc;
 
 	/* Find if this client already has an entry. This must be done *after* any security checks. */
-	HASH_FIND(hh_id0, db->contexts_by_id0, context->id, strlen(context->id), found_context);
-	if(!found_context)
+	for(i = 0; i < MAX_THREADS; i++)
 	{
-		HASH_FIND(hh_id1, db->contexts_by_id1, context->id, strlen(context->id), found_context);
-		if(!found_context)
+		switch (i)
 		{
-			HASH_FIND(hh_id2, db->contexts_by_id2, context->id, strlen(context->id), found_context);
-			if(!found_context)
-			{
+			case 0:
+				HASH_FIND(hh_id0, db->contexts_by_id0, context->id, strlen(context->id), found_context);
+				break;
+			case 1:
+				HASH_FIND(hh_id1, db->contexts_by_id1, context->id, strlen(context->id), found_context);
+				break;
+			case 2:
+				HASH_FIND(hh_id2, db->contexts_by_id2, context->id, strlen(context->id), found_context);
+				break;
+			case 3:
 				HASH_FIND(hh_id3, db->contexts_by_id3, context->id, strlen(context->id), found_context);
-				if(!found_context)
-				{
-					HASH_FIND(hh_id4, db->contexts_by_id4, context->id, strlen(context->id), found_context);
-					if(!found_context)
-					{
-						HASH_FIND(hh_id5, db->contexts_by_id5, context->id, strlen(context->id), found_context);
-						if(!found_context)
-						{
-							HASH_FIND(hh_id6, db->contexts_by_id6, context->id, strlen(context->id), found_context);
-							if(!found_context)
-								HASH_FIND(hh_id7, db->contexts_by_id7, context->id, strlen(context->id), found_context);
-						}
-					}
-				}
-			}	
+				break;
+			case 4:
+				HASH_FIND(hh_id4, db->contexts_by_id4, context->id, strlen(context->id), found_context);
+				break;
+			case 5:
+				HASH_FIND(hh_id5, db->contexts_by_id5, context->id, strlen(context->id), found_context);
+				break;
+			case 6:
+				HASH_FIND(hh_id6, db->contexts_by_id6, context->id, strlen(context->id), found_context);
+				break;
+			case 7:
+				HASH_FIND(hh_id7, db->contexts_by_id7, context->id, strlen(context->id), found_context);
+				break;
+			default:
+				return 1;
+				break;
 		}
+
+		if(found_context)
+			break;
 	}
-			
-	if(found_context){
+
+	if(found_context && found_context->forceToDelete == 0){
+		//enum mosquitto_client_state state = mosquitto__get_state(found_context);
+		
 		/* Found a matching client */
 		if(found_context->sock == INVALID_SOCKET){
 			/* Client is reconnecting after a disconnect */
@@ -220,10 +232,12 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 			}
 		}
 
-		int needWait = found_context->threadIndex != context->threadIndex;
-		if(needWait)
-			WaitForSingleObject(db->context_mutex[found_context->threadIndex], INFINITE);
-				
+		if(found_context->threadStatus != ctx__t_once_handled)
+		{
+			context->forceToDelete = 1;
+			return 1;
+		}
+					
 		if(context->clean_start == false && found_context->session_expiry_interval > 0){
 			if(context->protocol == mosq_p_mqtt311 || context->protocol == mosq_p_mqtt5){
 				connect_ack |= 0x01;
@@ -269,10 +283,12 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 		found_context->clean_start = true;
 		found_context->session_expiry_interval = 0;
 		mosquitto__set_state(found_context, mosq_cs_duplicate);
-		do_disconnect(db, found_context, MOSQ_ERR_SUCCESS);
-
-		if(needWait)
-			ReleaseMutex(db->context_mutex[found_context->threadIndex]);
+		context->forceToDelete = 2;
+		if(found_context->threadIndex == context->threadIndex)
+		{
+			context->forceToDelete = 3;
+			do_disconnect(db, found_context, MOSQ_ERR_SUCCESS);
+		}
 	}
 
 	rc = acl__find_acls(db, context);
@@ -320,40 +336,38 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 	connection_check_acl(db, context, &context->msgs_out.inflight);
 	connection_check_acl(db, context, &context->msgs_out.queued);
 
-	
-	if(context->threadIndex == 0)
+
+	switch(context->threadIndex)
 	{
-		HASH_ADD_KEYPTR(hh_id0, db->contexts_by_id0, context->id, strlen(context->id), context);
+		case 0:
+			HASH_ADD_KEYPTR(hh_id0, db->contexts_by_id0, context->id, strlen(context->id), context);
+			break;
+		case 1:
+			HASH_ADD_KEYPTR(hh_id1, db->contexts_by_id1, context->id, strlen(context->id), context);
+			break;
+		case 2:
+			HASH_ADD_KEYPTR(hh_id2, db->contexts_by_id2, context->id, strlen(context->id), context);
+			break;
+		case 3:
+			HASH_ADD_KEYPTR(hh_id3, db->contexts_by_id3, context->id, strlen(context->id), context);
+			break;
+		case 4:
+			HASH_ADD_KEYPTR(hh_id4, db->contexts_by_id4, context->id, strlen(context->id), context);
+			break;
+		case 5:
+			HASH_ADD_KEYPTR(hh_id5, db->contexts_by_id5, context->id, strlen(context->id), context);
+			break;
+		case 6:
+			HASH_ADD_KEYPTR(hh_id6, db->contexts_by_id6, context->id, strlen(context->id), context);
+			break;
+		case 7:
+			HASH_ADD_KEYPTR(hh_id7, db->contexts_by_id7, context->id, strlen(context->id), context);
+			break;
+		default:
+			return 1;
+			break;
 	}
-	else if(context->threadIndex == 1)
-	{
-		HASH_ADD_KEYPTR(hh_id1, db->contexts_by_id1, context->id, strlen(context->id), context);
-	}
-	else if(context->threadIndex == 2)
-	{
-		HASH_ADD_KEYPTR(hh_id2, db->contexts_by_id2, context->id, strlen(context->id), context);
-	}
-	else if(context->threadIndex == 3)
-	{
-		HASH_ADD_KEYPTR(hh_id3, db->contexts_by_id3, context->id, strlen(context->id), context);
-	}
-	else if(context->threadIndex == 4)
-	{
-		HASH_ADD_KEYPTR(hh_id4, db->contexts_by_id4, context->id, strlen(context->id), context);
-	}
-	else if(context->threadIndex == 5)
-	{
-		HASH_ADD_KEYPTR(hh_id5, db->contexts_by_id5, context->id, strlen(context->id), context);
-	}
-	else if(context->threadIndex == 6)
-	{
-		HASH_ADD_KEYPTR(hh_id6, db->contexts_by_id6, context->id, strlen(context->id), context);
-	}
-	else if(context->threadIndex == 7)
-	{
-		HASH_ADD_KEYPTR(hh_id7, db->contexts_by_id7, context->id, strlen(context->id), context);
-	}
-	
+	context->threadStatus = ctx__t_in_sockets_in_ids;
 
 #ifdef WITH_PERSISTENCE
 	if(!context->clean_start){
@@ -361,6 +375,7 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 	}
 #endif
 	context->maximum_qos = context->listener->maximum_qos;
+
 
 	/* Jack's patch */
 	if(db->config->vayo_http_url && strcmp(context->id, "jack!") != 0)
@@ -418,10 +433,12 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 	mosquitto__set_state(context, mosq_cs_active);
 	rc = send__connack(db, context, connect_ack, CONNACK_ACCEPTED, connack_props);
 	mosquitto_property_free_all(&connack_props);
+	ReleaseMutex(db->id_mutex);
 	return rc;
 error:
 	free(auth_data_out);
 	mosquitto_property_free_all(&connack_props);
+	ReleaseMutex(db->id_mutex);
 	return rc;
 }
 

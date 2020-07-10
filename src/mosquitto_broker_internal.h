@@ -485,8 +485,10 @@ struct mosquitto_db{
 	int epollfd;
 #endif
 	HANDLE socket_mutex;
-	HANDLE context_mutex[MAX_THREADS];
+	HANDLE id_mutex;
 	DWORD threadIds[MAX_THREADS];
+
+	SRWLOCK hh_rw_lock;
 };
 
 enum mosquitto__bridge_direction{

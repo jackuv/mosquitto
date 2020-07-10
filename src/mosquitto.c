@@ -289,23 +289,7 @@ int main(int argc, char *argv[])
 	rc = mosquitto_security_init(&int_db, false);
 	if(rc) return rc;
 
-	int_db.socket_mutex = CreateMutex( NULL, FALSE, NULL);
-	if (int_db.socket_mutex == NULL) 
-    {
-		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create socket mutex");
-		return 1;
-    }
-
-	for(i=0; i<MAX_THREADS; i++)
-	{
-		int_db.context_mutex[i] = CreateMutex( NULL, FALSE, NULL);
-		if (int_db.context_mutex[i] == NULL) 
-		{
-			log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create context mutex");
-			return 1;
-		}	
-	}
-	
+		
 	
 #ifdef WITH_SYS_TREE
 	sys_tree__init(&int_db);
@@ -386,6 +370,20 @@ int main(int argc, char *argv[])
 	sd_notify(0, "READY=1");
 #endif
 
+	int_db.socket_mutex = CreateMutex( NULL, FALSE, NULL);
+	if (int_db.socket_mutex == NULL) 
+    {
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create socket mutex");
+		return 1;
+    }
+	int_db.id_mutex = CreateMutex( NULL, FALSE, NULL);
+	if (int_db.id_mutex == NULL) 
+	{
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create context mutex");
+		return 1;
+	}	
+	InitializeSRWLock(&int_db.hh_rw_lock);
+	
 	run = 1;
 	rc = mosquitto_main_loop_threaded(&int_db, listensock, listensock_count);
 
@@ -571,9 +569,7 @@ int main(int argc, char *argv[])
 
 	
 	CloseHandle(int_db.socket_mutex);
-	for(i=0; i<MAX_THREADS; i++)
-		CloseHandle(int_db.context_mutex[i]);	
-
+	CloseHandle(int_db.id_mutex);
 	
 	if(config.pid_file){
 		remove(config.pid_file);

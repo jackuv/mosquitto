@@ -82,7 +82,7 @@ static void sys_tree__update_clients(struct mosquitto_db *db, char *buf)
 	count_by_sock += HASH_CNT(hh_sock5, db->contexts_by_sock5);
 	count_by_sock += HASH_CNT(hh_sock6, db->contexts_by_sock6);
 	count_by_sock += HASH_CNT(hh_sock7, db->contexts_by_sock7);
-
+			
 	if(client_count != count_total){
 		client_count = count_total;
 		snprintf(buf, BUFLEN, "%d", client_count);

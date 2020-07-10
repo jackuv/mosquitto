@@ -51,7 +51,7 @@ static struct mosquitto *persist__find_or_add_context(struct mosquitto_db *db, c
 	if(!client_id) return NULL;
 
 	context = NULL;
-	   
+
 	if(threadIndex == 0)
 	{
 		HASH_FIND(hh_id0, db->contexts_by_id0, client_id, strlen(client_id), context);
@@ -212,7 +212,7 @@ static struct mosquitto *persist__find_or_add_context(struct mosquitto_db *db, c
 			context->last_mid = last_mid;
 		}
 	}
-	
+		
 	return context;
 }
 

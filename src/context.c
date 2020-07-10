@@ -90,7 +90,11 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock)
 
 	if((int)context->sock >= 0){
 		int threadIndex = rand() % MAX_THREADS;
+		// int threadIndex = getThreadIndex(db);
 		context->threadIndex = threadIndex;
+		context->threadStatus = ctx__t_in_unhandled;
+		context->forceToDelete = 0;
+		// WaitForSingleObject(db->id_mutex, INFINITE);
 		if(threadIndex == 0)
 		{
 			HASH_ADD(hh_sock0, db->contexts_by_sock0, sock, sizeof(context->sock), context);	
@@ -123,7 +127,9 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock)
 		{
 			HASH_ADD(hh_sock7, db->contexts_by_sock7, sock, sizeof(context->sock), context);
 		}
-		
+		context->threadStatus = ctx__t_in_sockets;
+
+		// ReleaseMutex(db->id_mutex);
 	}
 	return context;
 }
@@ -347,62 +353,41 @@ void context__free_disused(struct mosquitto_db *db, int threadIndex)
 
 void context__remove_from_by_id(struct mosquitto_db *db, struct mosquitto *context)
 {
-	if(context->threadIndex == 0)
+	if(context->threadStatus != ctx__t_in_sockets_in_ids && context->threadStatus != ctx__t_once_handled)
 	{
-		if(context->removed_from_by_id == false && context->id){
-			HASH_DELETE(hh_id0, db->contexts_by_id0, context);
-			context->removed_from_by_id = true;
-		}
+		context->removed_from_by_id = true;
+		return;
 	}
-	else if(context->threadIndex == 1)
-	{
-		if(context->removed_from_by_id == false && context->id){
-			HASH_DELETE(hh_id1, db->contexts_by_id1, context);
-			context->removed_from_by_id = true;
+		
+	if(context->removed_from_by_id == false && context->id){
+		switch (context->threadIndex)
+		{
+			case 0:
+				HASH_DELETE(hh_id0, db->contexts_by_id0, context);
+				break;
+			case 1:
+				HASH_DELETE(hh_id1, db->contexts_by_id1, context);
+				break;
+			case 2:
+				HASH_DELETE(hh_id2, db->contexts_by_id2, context);
+				break;
+			case 3:
+				HASH_DELETE(hh_id3, db->contexts_by_id3, context);
+				break;
+			case 4:
+				HASH_DELETE(hh_id4, db->contexts_by_id4, context);
+				break;
+			case 5:
+				HASH_DELETE(hh_id5, db->contexts_by_id5, context);
+				break;
+			case 6:
+				HASH_DELETE(hh_id6, db->contexts_by_id6, context);
+				break;
+			case 7:
+				HASH_DELETE(hh_id7, db->contexts_by_id7, context);
+				break;
 		}
+		context->removed_from_by_id = true;
 	}
-	else if(context->threadIndex == 2)
-	{
-		if(context->removed_from_by_id == false && context->id){
-			HASH_DELETE(hh_id2, db->contexts_by_id2, context);
-			context->removed_from_by_id = true;
-		}
-	}
-	else if(context->threadIndex == 3)
-	{
-		if(context->removed_from_by_id == false && context->id){
-			HASH_DELETE(hh_id3, db->contexts_by_id3, context);
-			context->removed_from_by_id = true;
-		}
-	}
-	else if(context->threadIndex == 4)
-	{
-		if(context->removed_from_by_id == false && context->id){
-			HASH_DELETE(hh_id4, db->contexts_by_id4, context);
-			context->removed_from_by_id = true;
-		}
-	}
-	else if(context->threadIndex == 5)
-	{
-		if(context->removed_from_by_id == false && context->id){
-			HASH_DELETE(hh_id5, db->contexts_by_id5, context);
-			context->removed_from_by_id = true;
-		}
-	}
-	else if(context->threadIndex == 6)
-	{
-		if(context->removed_from_by_id == false && context->id){
-			HASH_DELETE(hh_id6, db->contexts_by_id6, context);
-			context->removed_from_by_id = true;
-		}
-	}
-	else if(context->threadIndex == 7)
-	{
-		if(context->removed_from_by_id == false && context->id){
-			HASH_DELETE(hh_id7, db->contexts_by_id7, context);
-			context->removed_from_by_id = true;
-		}
-	}
-	
 }
 

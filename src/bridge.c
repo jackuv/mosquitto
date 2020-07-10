@@ -94,7 +94,7 @@ int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 	{
 		HASH_FIND(hh_id7, db->contexts_by_id7, local_id, strlen(local_id), new_context);
 	}
-		
+			
 	if(new_context){
 		/* (possible from persistent db) */
 		mosquitto__free(local_id);
@@ -107,7 +107,7 @@ int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 		}
 		new_context->id = local_id;
 		new_context->threadIndex = threadIndex;
-		
+
 		if(threadIndex == 0)
 		{
 			HASH_ADD_KEYPTR(hh_id0, db->contexts_by_id0, new_context->id, strlen(new_context->id), new_context);
@@ -472,7 +472,6 @@ int bridge__connect(struct mosquitto_db *db, struct mosquitto *context)
 		mosquitto__set_state(context, mosq_cs_connect_pending);
 	}
 
-	
 	int threadIndex = rand() % MAX_THREADS;
 	context->threadIndex = threadIndex;
 	if(threadIndex == 0)
@@ -507,7 +506,7 @@ int bridge__connect(struct mosquitto_db *db, struct mosquitto *context)
 	{
 		HASH_ADD(hh_sock7, db->contexts_by_sock7, sock, sizeof(context->sock), context);
 	}
-
+		
 
 	rc2 = send__connect(context, context->keepalive, context->clean_start, NULL);
 	if(rc2 == MOSQ_ERR_SUCCESS){

@@ -740,18 +740,24 @@ int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub
 		tokens->topic_len = 0;
 	}
 
+	AcquireSRWLockShared(&db->hh_rw_lock);
 	HASH_FIND(hh, *root, tokens->topic, tokens->topic_len, subhier);
+	ReleaseSRWLockShared(&db->hh_rw_lock);
+	
 	if(!subhier){
+		AcquireSRWLockExclusive(&db->hh_rw_lock);
 		subhier = sub__add_hier_entry(NULL, root, tokens->topic, tokens->topic_len);
 		if(!subhier){
 			sub__topic_tokens_free(tokens);
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 			return MOSQ_ERR_NOMEM;
 		}
-
+		ReleaseSRWLockExclusive(&db->hh_rw_lock);
 	}
+	AcquireSRWLockExclusive(&db->hh_rw_lock);
 	rc = sub__add_context(db, context, qos, identifier, options, subhier, tokens, sharename);
-
+	ReleaseSRWLockExclusive(&db->hh_rw_lock);
+	
 	sub__topic_tokens_free(tokens);
 
 	return rc;
@@ -790,6 +796,7 @@ int sub__remove(struct mosquitto_db *db, struct mosquitto *context, const char *
 		tokens->topic_len = 0;
 	}
 
+	AcquireSRWLockExclusive(&db->hh_rw_lock);
 	HASH_FIND(hh, root, tokens->topic, tokens->topic_len, subhier);
 	if(subhier){
 		*reason = MQTT_RC_NO_SUBSCRIPTION_EXISTED;
@@ -797,7 +804,8 @@ int sub__remove(struct mosquitto_db *db, struct mosquitto *context, const char *
 	}
 
 	sub__topic_tokens_free(tokens);
-
+	ReleaseSRWLockExclusive(&db->hh_rw_lock);
+	
 	return rc;
 }
 
@@ -897,9 +905,12 @@ static int sub__clean_session_shared(struct mosquitto_db *db, struct mosquitto *
 
 			hier = context->shared_subs[i]->hier;
 			context->shared_subs[i]->hier = NULL;
+
+			AcquireSRWLockShared(&db->hh_rw_lock);
 			do{
 				hier = tmp_remove_subs(hier);
 			}while(hier);
+			ReleaseSRWLockShared(&db->hh_rw_lock);
 		}
 		mosquitto__free(context->shared_subs[i]);
 	}
@@ -942,9 +953,11 @@ int sub__clean_session(struct mosquitto_db *db, struct mosquitto *context)
 
 			hier = context->subs[i];
 			context->subs[i] = NULL;
+			AcquireSRWLockShared(&db->hh_rw_lock);
 			do{
 				hier = tmp_remove_subs(hier);
 			}while(hier);
+			ReleaseSRWLockShared(&db->hh_rw_lock);
 		}
 	}
 	mosquitto__free(context->subs);
@@ -1120,12 +1133,14 @@ int sub__retain_queue(struct mosquitto_db *db, struct mosquitto *context, const 
 
 	if(sub__topic_tokenise(sub, &tokens)) return 1;
 
+	AcquireSRWLockShared(&db->hh_rw_lock);
 	HASH_FIND(hh, db->subs, tokens->topic, tokens->topic_len, subhier);
-
+		
 	if(subhier){
 		now = time(NULL);
 		retain__search(db, subhier, tokens, context, sub, sub_qos, subscription_identifier, now, 0);
 	}
+	ReleaseSRWLockShared(&db->hh_rw_lock);
 	while(tokens){
 		tail = tokens->next;
 		mosquitto__free(tokens->topic);

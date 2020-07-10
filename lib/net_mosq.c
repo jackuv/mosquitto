@@ -220,55 +220,40 @@ int net__socket_close(struct mosquitto *mosq)
 	{
 		if(mosq->sock != INVALID_SOCKET){
 #ifdef WITH_BROKER
+			// AcquireSRWLockExclusive(&db->socket_rw_lock[mosq->threadIndex]);
 			if(mosq->threadIndex == 0)
 			{
-				WaitForSingleObject(db->context_mutex[0], INFINITE);
 				HASH_DELETE(hh_sock0, db->contexts_by_sock0, mosq);
-				ReleaseMutex(db->context_mutex[0]);
 			}
 			else if(mosq->threadIndex == 1)
 			{
-				WaitForSingleObject(db->context_mutex[1], INFINITE);
 				HASH_DELETE(hh_sock1, db->contexts_by_sock1, mosq);
-				ReleaseMutex(db->context_mutex[1]);
 			}
 			else if(mosq->threadIndex == 2)
 			{
-				WaitForSingleObject(db->context_mutex[2], INFINITE);
 				HASH_DELETE(hh_sock2, db->contexts_by_sock2, mosq);
-				ReleaseMutex(db->context_mutex[2]);
 			}
 			else if(mosq->threadIndex == 3)
 			{
-				WaitForSingleObject(db->context_mutex[3], INFINITE);
 				HASH_DELETE(hh_sock3, db->contexts_by_sock3, mosq);
-				ReleaseMutex(db->context_mutex[3]);
 			}
 			else if(mosq->threadIndex == 4)
 			{
-				WaitForSingleObject(db->context_mutex[4], INFINITE);
 				HASH_DELETE(hh_sock4, db->contexts_by_sock4, mosq);
-				ReleaseMutex(db->context_mutex[4]);
 			}
 			else if(mosq->threadIndex == 5)
 			{
-				WaitForSingleObject(db->context_mutex[5], INFINITE);
 				HASH_DELETE(hh_sock5, db->contexts_by_sock5, mosq);
-				ReleaseMutex(db->context_mutex[5]);
 			}
 			else if(mosq->threadIndex == 6)
 			{
-				WaitForSingleObject(db->context_mutex[6], INFINITE);
 				HASH_DELETE(hh_sock6, db->contexts_by_sock6, mosq);
-				ReleaseMutex(db->context_mutex[6]);
 			}
 			else if(mosq->threadIndex == 7)
 			{
-				WaitForSingleObject(db->context_mutex[7], INFINITE);
 				HASH_DELETE(hh_sock7, db->contexts_by_sock7, mosq);
-				ReleaseMutex(db->context_mutex[7]);
 			}
-
+			// ReleaseSRWLockExclusive(&db->socket_rw_lock[mosq->threadIndex]);
 			
 #endif
 			rc = COMPAT_CLOSE(mosq->sock);

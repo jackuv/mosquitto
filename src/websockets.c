@@ -241,7 +241,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				return -1;
 			}
 			mosq->sock = libwebsocket_get_socket_fd(wsi);
-						
+
 			if(mosq->threadIndex == 0)
 			{
 				HASH_ADD(hh_sock0, db->contexts_by_sock0, sock, sizeof(mosq->sock), mosq);		
@@ -273,10 +273,6 @@ static int callback_mqtt(struct libwebsocket_context *context,
 			else if(mosq->threadIndex == 7)
 			{
 				HASH_ADD(hh_sock7, db->contexts_by_sock7, sock, sizeof(mosq->sock), mosq);		
-			}
-			else
-			{
-				return -1;
 			}
 			break;
 
@@ -739,7 +735,7 @@ static int callback_http(struct libwebsocket_context *context,
 		case LWS_CALLBACK_DEL_POLL_FD:
 		case LWS_CALLBACK_CHANGE_MODE_POLL_FD:
 
-
+			// AcquireSRWLockShared(&db->socket_rw_lock[mosq->threadIndex]);
 			HASH_FIND(hh_sock0, db->contexts_by_sock0, &pollargs->fd, sizeof(pollargs->fd), mosq);
 			if(!mosq)
 				HASH_FIND(hh_sock1, db->contexts_by_sock1, &pollargs->fd, sizeof(pollargs->fd), mosq);
@@ -755,7 +751,8 @@ static int callback_http(struct libwebsocket_context *context,
 				HASH_FIND(hh_sock6, db->contexts_by_sock6, &pollargs->fd, sizeof(pollargs->fd), mosq);
 			if(!mosq)
 				HASH_FIND(hh_sock7, db->contexts_by_sock7, &pollargs->fd, sizeof(pollargs->fd), mosq);
-					
+			// ReleaseSRWLockShared(&db->socket_rw_lock[mosq->threadIndex]);
+		
 			if(mosq && (pollargs->events & POLLOUT)){
 				mosq->ws_want_write = true;
 			}
