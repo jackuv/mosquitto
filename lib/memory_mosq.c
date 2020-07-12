@@ -195,7 +195,7 @@ char *vayo__topic_with_id(const char *topic, const char * id, int* len){
 	return result;
 }
 
-int startsWith(const char *pre, const char *str)
+int vayo_startsWith(const char *pre, const char *str)
 {
 	size_t lenpre = strlen(pre),
 		lenstr = strlen(str);
@@ -210,7 +210,7 @@ char *vayo_strdup_without_id(const char *topic, const char* client_id_part, cons
 	if (len < 2)
 		return NULL;
 
-	if (!startsWith(vayo_topic_mask, topic))
+	if (!vayo_startsWith(vayo_topic_mask, topic))
 		return NULL;
 
 	int i;
@@ -219,7 +219,7 @@ char *vayo_strdup_without_id(const char *topic, const char* client_id_part, cons
 			break;
 	}
 	
-	if (i == 0 || i == len-1 || !startsWith(client_id_part, &topic[i+1]))
+	if (i == 0 || i == len-1 || !vayo_startsWith(client_id_part, &topic[i+1]))
 		return NULL;
 			
 	char* p = vayo__strndup(topic, i);

@@ -173,15 +173,20 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 	WaitForSingleObject(db->id_mutex, INFINITE);
 	int threadIndex = getThreadIndex(db);
 	struct mosquitto *found_context;
+	struct mosquitto *found_contexts[MAX_THREADS];
 	struct mosquitto__subleaf *leaf;
 	mosquitto_property *connack_props = NULL;
 	uint8_t connect_ack = 0;
 	int i;
 	int rc;
+	int duplicates = 0;
 
 	/* Find if this client already has an entry. This must be done *after* any security checks. */
 	for(i = 0; i < MAX_THREADS; i++)
+		found_contexts[i] = NULL;
+	for(i = 0; i < MAX_THREADS; i++)
 	{
+		found_context = NULL;
 		switch (i)
 		{
 			case 0:
@@ -214,82 +219,115 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 		}
 
 		if(found_context)
-			break;
+			found_contexts[duplicates++] = found_context;
 	}
 
-	if(found_context && found_context->forceToDelete == 0){
-		//enum mosquitto_client_state state = mosquitto__get_state(found_context);
+
+	if(duplicates < 2)
+	{
+		found_context = found_contexts[0];
+		if(found_context){
+			//enum mosquitto_client_state state = mosquitto__get_state(found_context);
 		
-		/* Found a matching client */
-		if(found_context->sock == INVALID_SOCKET){
-			/* Client is reconnecting after a disconnect */
-			/* FIXME - does anything need to be done here? */
-		}else{
-			/* Client is already connected, disconnect old version. This is
-			 * done in context__cleanup() below. */
-			if(db->config->connection_messages == true){
-				log__printf(NULL, MOSQ_LOG_ERR, "Client %s already connected, p_tidx:%d, c_tidx:%d, t%d.", context->id, found_context->threadIndex,  context->threadIndex, threadIndex);
+			/* Found a matching client */
+			if(found_context->sock == INVALID_SOCKET){
+				/* Client is reconnecting after a disconnect */
+				/* FIXME - does anything need to be done here? */
+			}else{
+				/* Client is already connected, disconnect old version. This is
+				 * done in context__cleanup() below. */
+				if(db->config->connection_messages == true){
+					log__printf(NULL, MOSQ_LOG_ERR, "Client %s already connected, p_tidx:%d, c_tidx:%d, t%d.", context->id, found_context->threadIndex,  context->threadIndex, threadIndex);
+				}
 			}
-		}
+		
+			if(context->clean_start == false && found_context->session_expiry_interval > 0){
+				if(context->protocol == mosq_p_mqtt311 || context->protocol == mosq_p_mqtt5){
+					connect_ack |= 0x01;
+				}
 
-		if(found_context->threadStatus != ctx__t_once_handled)
-		{
-			context->forceToDelete = 1;
-			return 1;
-		}
-					
-		if(context->clean_start == false && found_context->session_expiry_interval > 0){
-			if(context->protocol == mosq_p_mqtt311 || context->protocol == mosq_p_mqtt5){
-				connect_ack |= 0x01;
-			}
+				if(found_context->msgs_in.inflight || found_context->msgs_in.queued
+						|| found_context->msgs_out.inflight || found_context->msgs_out.queued){
 
-			if(found_context->msgs_in.inflight || found_context->msgs_in.queued
-					|| found_context->msgs_out.inflight || found_context->msgs_out.queued){
+					memcpy(&context->msgs_in, &found_context->msgs_in, sizeof(struct mosquitto_msg_data));
+					memcpy(&context->msgs_out, &found_context->msgs_out, sizeof(struct mosquitto_msg_data));
 
-				memcpy(&context->msgs_in, &found_context->msgs_in, sizeof(struct mosquitto_msg_data));
-				memcpy(&context->msgs_out, &found_context->msgs_out, sizeof(struct mosquitto_msg_data));
+					memset(&found_context->msgs_in, 0, sizeof(struct mosquitto_msg_data));
+					memset(&found_context->msgs_out, 0, sizeof(struct mosquitto_msg_data));
 
-				memset(&found_context->msgs_in, 0, sizeof(struct mosquitto_msg_data));
-				memset(&found_context->msgs_out, 0, sizeof(struct mosquitto_msg_data));
+					db__message_reconnect_reset(db, context);
+				}
+				context->subs = found_context->subs;
+				found_context->subs = NULL;
+				context->sub_count = found_context->sub_count;
+				found_context->sub_count = 0;
+				context->last_mid = found_context->last_mid;
 
-				db__message_reconnect_reset(db, context);
-			}
-			context->subs = found_context->subs;
-			found_context->subs = NULL;
-			context->sub_count = found_context->sub_count;
-			found_context->sub_count = 0;
-			context->last_mid = found_context->last_mid;
-
-			for(i=0; i<context->sub_count; i++){
-				if(context->subs[i]){
-					leaf = context->subs[i]->subs;
-					while(leaf){
-						if(leaf->context == found_context){
-							leaf->context = context;
+				for(i=0; i<context->sub_count; i++){
+					if(context->subs[i]){
+						leaf = context->subs[i]->subs;
+						while(leaf){
+							if(leaf->context == found_context){
+								leaf->context = context;
+							}
+							leaf = leaf->next;
 						}
-						leaf = leaf->next;
 					}
 				}
 			}
-		}
 
-		if(context->clean_start == true){
-			sub__clean_session(db, found_context);
-		}
-		session_expiry__remove(found_context);
-		will_delay__remove(found_context);
-		will__clear(found_context);
+			if(context->clean_start == true){
+				sub__clean_session(db, found_context);
+			}
+			session_expiry__remove(found_context);
+			will_delay__remove(found_context);
+			will__clear(found_context);
 
-		found_context->clean_start = true;
-		found_context->session_expiry_interval = 0;
-		mosquitto__set_state(found_context, mosq_cs_duplicate);
-		context->forceToDelete = 2;
-		if(found_context->threadIndex == context->threadIndex)
+			found_context->clean_start = true;
+			found_context->session_expiry_interval = 0;
+			mosquitto__set_state(found_context, mosq_cs_duplicate);
+			found_context->forceToDelete = 2;
+			if(found_context->threadIndex == context->threadIndex)
+				do_disconnect(db, found_context, MOSQ_ERR_SUCCESS);
+		}
+	} else
+	{
+		for(i = 0; i < duplicates; i++) // other thread duplicates handling, kill all of them!
 		{
-			context->forceToDelete = 3;
-			do_disconnect(db, found_context, MOSQ_ERR_SUCCESS);
+			found_context = found_contexts[i];
+			if(found_context->forceToDelete > 0)
+				continue;
+
+			// if(found_context->threadIndex == context->threadIndex)
+			
+			if(context->clean_start == true){
+				sub__clean_session(db, found_context);
+			}
+			session_expiry__remove(found_context);
+			will_delay__remove(found_context);
+			will__clear(found_context);
+
+			found_context->clean_start = true;
+			found_context->session_expiry_interval = 0;
+			mosquitto__set_state(found_context, mosq_cs_duplicate);
+			found_context->forceToDelete = 3;
+			
+			if(found_context->threadIndex == context->threadIndex)
+				do_disconnect(db, found_context, MOSQ_ERR_SUCCESS);
+					   		
+			/*if(found_context->forceToDelete == 0)
+			{
+				context->forceToDelete = 1;
+				return 1;
+			}*/
+			/*if(found_context->onceHandled == 0)
+			{
+				
+			}*/
 		}
 	}
+
+	
 
 	rc = acl__find_acls(db, context);
 	if(rc){
@@ -365,9 +403,7 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 			break;
 		default:
 			return 1;
-			break;
 	}
-	context->threadStatus = ctx__t_in_sockets_in_ids;
 
 #ifdef WITH_PERSISTENCE
 	if(!context->clean_start){
@@ -378,12 +414,31 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 
 
 	/* Jack's patch */
-	if(db->config->vayo_http_url && strcmp(context->id, "jack!") != 0)
+	if(db->run)
 	{
-		if (http_get_request(db->config->vayo_http_url, context->id, context->username, context->password, db->config->vayo_http_timeout))
+		if(strcmp(context->id, "jack!") != 0)
 		{
-			rc = MOSQ_ERR_NOMEM;
-			goto error;
+			if(context->listener->ssl_ctx)
+			{
+				if(db->config->vayo_http_url)
+				{
+					if (http_get_request(db->config->vayo_http_url, context->id, context->username, context->password, db->config->vayo_http_timeout))
+					{
+						rc = MOSQ_ERR_NOMEM;
+						goto error;
+					}
+				}
+			} else
+			{
+				if(db->config->vayo_auth_client_mask && db->config->vayo_auth_server_mask)
+				{
+					if(!vayo_startsWith(db->config->vayo_auth_client_mask, context->id) && !vayo_startsWith(db->config->vayo_auth_server_mask, context->id))
+					{
+						rc = MOSQ_ERR_NOMEM;
+						goto error;
+					}
+				}
+			}			
 		}
 	}
 	/* Jack's patch */

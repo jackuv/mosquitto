@@ -1065,7 +1065,7 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reaso
 						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected due to protocol error.", id);
 						break;
 					case MOSQ_ERR_CONN_LOST:
-						log__printf(NULL, MOSQ_LOG_NOTICE, "Socket error on client %s, disconnecting. ct%d, t%d, s%d, j%d delete:%d", id, context->threadIndex, getThreadIndex(db), mosquitto__get_state(context), context->threadStatus, context->forceToDelete);
+						log__printf(NULL, MOSQ_LOG_NOTICE, "Socket error on client %s, disconnecting. ct%d, t%d, s%d, delete:%d", id, context->threadIndex, getThreadIndex(db), mosquitto__get_state(context), context->forceToDelete);
 						break;
 					case MOSQ_ERR_AUTH:
 						log__printf(NULL, MOSQ_LOG_NOTICE, "Client %s disconnected, no longer authorised.", id);
@@ -1121,7 +1121,6 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 	{
 		HASH_ITER(hh_sock0, db->contexts_by_sock0, context, ctxt_tmp){ // WRITE
 			if(context->pollfd_index < 0){
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 
@@ -1145,7 +1144,6 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #else
 				lws_service_fd(context->ws_context, &wspoll);
 #endif
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 #endif
@@ -1179,26 +1177,22 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #endif
 						}
 					}else{
-						context->threadStatus = ctx__t_once_handled;
 						do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 						continue;
 					}
 				}
 				rc = packet__write(context);
 				if(rc){
-					context->threadStatus = ctx__t_once_handled;
 					do_disconnect(db, context, rc);
 					continue;
 				}
 			}
-			context->threadStatus = ctx__t_once_handled;	
 		} // END OF ITER		
 	}
 	else if(threadIndex == 1)
 	{
 		HASH_ITER(hh_sock1, db->contexts_by_sock1, context, ctxt_tmp){ // WRITE
 			if(context->pollfd_index < 0){
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 
@@ -1222,7 +1216,6 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #else
 				lws_service_fd(context->ws_context, &wspoll);
 #endif
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 #endif
@@ -1256,26 +1249,22 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #endif
 						}
 					}else{
-						context->threadStatus = ctx__t_once_handled;
 						do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 						continue;
 					}
 				}
 				rc = packet__write(context);
 				if(rc){
-					context->threadStatus = ctx__t_once_handled;
 					do_disconnect(db, context, rc);
 					continue;
 				}
 			}
-			context->threadStatus = ctx__t_once_handled;	
 		} // END OF ITER		
 	}
 	else if(threadIndex == 2)
 	{
 		HASH_ITER(hh_sock2, db->contexts_by_sock2, context, ctxt_tmp){ // WRITE
 			if(context->pollfd_index < 0){
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 
@@ -1299,7 +1288,6 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #else
 				lws_service_fd(context->ws_context, &wspoll);
 #endif
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 #endif
@@ -1333,26 +1321,22 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #endif
 						}
 					}else{
-						context->threadStatus = ctx__t_once_handled;
 						do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 						continue;
 					}
 				}
 				rc = packet__write(context);
 				if(rc){
-					context->threadStatus = ctx__t_once_handled;
 					do_disconnect(db, context, rc);
 					continue;
 				}
 			}
-			context->threadStatus = ctx__t_once_handled;	
 		} // END OF ITER		
 	}
 	else if(threadIndex == 3)
 	{
 		HASH_ITER(hh_sock3, db->contexts_by_sock3, context, ctxt_tmp){ // WRITE
 			if(context->pollfd_index < 0){
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 
@@ -1376,7 +1360,6 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #else
 				lws_service_fd(context->ws_context, &wspoll);
 #endif
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 #endif
@@ -1410,26 +1393,22 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #endif
 						}
 					}else{
-						context->threadStatus = ctx__t_once_handled;
 						do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 						continue;
 					}
 				}
 				rc = packet__write(context);
 				if(rc){
-					context->threadStatus = ctx__t_once_handled;
 					do_disconnect(db, context, rc);
 					continue;
 				}
 			}
-			context->threadStatus = ctx__t_once_handled;	
 		} // END OF ITER		
 	}
 	else if(threadIndex == 4)
 	{
 		HASH_ITER(hh_sock4, db->contexts_by_sock4, context, ctxt_tmp){ // WRITE
 			if(context->pollfd_index < 0){
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 
@@ -1453,7 +1432,6 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #else
 				lws_service_fd(context->ws_context, &wspoll);
 #endif
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 #endif
@@ -1487,26 +1465,22 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #endif
 						}
 					}else{
-						context->threadStatus = ctx__t_once_handled;
 						do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 						continue;
 					}
 				}
 				rc = packet__write(context);
 				if(rc){
-					context->threadStatus = ctx__t_once_handled;
 					do_disconnect(db, context, rc);
 					continue;
 				}
 			}
-			context->threadStatus = ctx__t_once_handled;	
 		} // END OF ITER		
 	}
 	else if(threadIndex == 5)
 	{
 		HASH_ITER(hh_sock5, db->contexts_by_sock5, context, ctxt_tmp){ // WRITE
 			if(context->pollfd_index < 0){
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 
@@ -1530,7 +1504,6 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #else
 				lws_service_fd(context->ws_context, &wspoll);
 #endif
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 #endif
@@ -1564,26 +1537,22 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #endif
 						}
 					}else{
-						context->threadStatus = ctx__t_once_handled;
 						do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 						continue;
 					}
 				}
 				rc = packet__write(context);
 				if(rc){
-					context->threadStatus = ctx__t_once_handled;
 					do_disconnect(db, context, rc);
 					continue;
 				}
 			}
-			context->threadStatus = ctx__t_once_handled;	
 		} // END OF ITER		
 	}
 	else if(threadIndex == 6)
 	{
 		HASH_ITER(hh_sock6, db->contexts_by_sock6, context, ctxt_tmp){ // WRITE
 			if(context->pollfd_index < 0){
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 
@@ -1607,7 +1576,6 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #else
 				lws_service_fd(context->ws_context, &wspoll);
 #endif
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 #endif
@@ -1641,26 +1609,22 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #endif
 						}
 					}else{
-						context->threadStatus = ctx__t_once_handled;
 						do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 						continue;
 					}
 				}
 				rc = packet__write(context);
 				if(rc){
-					context->threadStatus = ctx__t_once_handled;
 					do_disconnect(db, context, rc);
 					continue;
 				}
 			}
-			context->threadStatus = ctx__t_once_handled;	
 		} // END OF ITER		
 	}
 	else if(threadIndex == 7)
 	{
 		HASH_ITER(hh_sock7, db->contexts_by_sock7, context, ctxt_tmp){ // WRITE
 			if(context->pollfd_index < 0){
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 
@@ -1684,7 +1648,6 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #else
 				lws_service_fd(context->ws_context, &wspoll);
 #endif
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 #endif
@@ -1718,19 +1681,16 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #endif
 						}
 					}else{
-						context->threadStatus = ctx__t_once_handled;
 						do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 						continue;
 					}
 				}
 				rc = packet__write(context);
 				if(rc){
-					context->threadStatus = ctx__t_once_handled;
 					do_disconnect(db, context, rc);
 					continue;
 				}
 			}
-			context->threadStatus = ctx__t_once_handled;	
 		} // END OF ITER		
 	}
 
@@ -1746,14 +1706,12 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 	{
 		HASH_ITER(hh_sock0, db->contexts_by_sock0, context, ctxt_tmp){ // READ
 			if(context->pollfd_index < 0){
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 	//#endif
 #ifdef WITH_WEBSOCKETS
 			if(context->wsi){
 				// Websocket are already handled above
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 #endif
@@ -1775,38 +1733,32 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 				do{
 					rc = packet__read(db, context);
 					if(rc){
-						context->threadStatus = ctx__t_once_handled;
 						do_disconnect(db, context, rc);
 						continue;
 					}
 				}while(SSL_DATA_PENDING(context));
-				context->threadStatus = ctx__t_once_handled;
 			}else{
 #ifdef WITH_EPOLL
 				if(events & (EPOLLERR | EPOLLHUP)){
 #else
 				if(context->pollfd_index >= 0 && pollfds[context->pollfd_index].revents & (POLLERR | POLLNVAL | POLLHUP)){
 #endif
-					context->threadStatus = ctx__t_once_handled;
 					do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 					continue;
 				}
 			}
-			context->threadStatus = ctx__t_once_handled;
 		}
 	}
 	else if(threadIndex == 1)
 	{
 		HASH_ITER(hh_sock1, db->contexts_by_sock1, context, ctxt_tmp){ // READ
 			if(context->pollfd_index < 0){
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 	//#endif
 #ifdef WITH_WEBSOCKETS
 			if(context->wsi){
 				// Websocket are already handled above
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 #endif
@@ -1828,38 +1780,32 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 				do{
 					rc = packet__read(db, context);
 					if(rc){
-						context->threadStatus = ctx__t_once_handled;
 						do_disconnect(db, context, rc);
 						continue;
 					}
 				}while(SSL_DATA_PENDING(context));
-				context->threadStatus = ctx__t_once_handled;
 			}else{
 #ifdef WITH_EPOLL
 				if(events & (EPOLLERR | EPOLLHUP)){
 #else
 				if(context->pollfd_index >= 0 && pollfds[context->pollfd_index].revents & (POLLERR | POLLNVAL | POLLHUP)){
 #endif
-					context->threadStatus = ctx__t_once_handled;
 					do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 					continue;
 				}
 			}
-			context->threadStatus = ctx__t_once_handled;
 		}
 	}
 	else if(threadIndex == 2)
 	{
 		HASH_ITER(hh_sock2, db->contexts_by_sock2, context, ctxt_tmp){ // READ
 			if(context->pollfd_index < 0){
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 	//#endif
 #ifdef WITH_WEBSOCKETS
 			if(context->wsi){
 				// Websocket are already handled above
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 #endif
@@ -1881,38 +1827,32 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 				do{
 					rc = packet__read(db, context);
 					if(rc){
-						context->threadStatus = ctx__t_once_handled;
 						do_disconnect(db, context, rc);
 						continue;
 					}
 				}while(SSL_DATA_PENDING(context));
-				context->threadStatus = ctx__t_once_handled;
 			}else{
 #ifdef WITH_EPOLL
 				if(events & (EPOLLERR | EPOLLHUP)){
 #else
 				if(context->pollfd_index >= 0 && pollfds[context->pollfd_index].revents & (POLLERR | POLLNVAL | POLLHUP)){
 #endif
-					context->threadStatus = ctx__t_once_handled;
 					do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 					continue;
 				}
 			}
-			context->threadStatus = ctx__t_once_handled;
 		}
 	}
 	else if(threadIndex == 3)
 	{
 		HASH_ITER(hh_sock3, db->contexts_by_sock3, context, ctxt_tmp){ // READ
 			if(context->pollfd_index < 0){
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 	//#endif
 #ifdef WITH_WEBSOCKETS
 			if(context->wsi){
 				// Websocket are already handled above
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 #endif
@@ -1934,38 +1874,32 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 				do{
 					rc = packet__read(db, context);
 					if(rc){
-						context->threadStatus = ctx__t_once_handled;
 						do_disconnect(db, context, rc);
 						continue;
 					}
 				}while(SSL_DATA_PENDING(context));
-				context->threadStatus = ctx__t_once_handled;
 			}else{
 #ifdef WITH_EPOLL
 				if(events & (EPOLLERR | EPOLLHUP)){
 #else
 				if(context->pollfd_index >= 0 && pollfds[context->pollfd_index].revents & (POLLERR | POLLNVAL | POLLHUP)){
 #endif
-					context->threadStatus = ctx__t_once_handled;
 					do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 					continue;
 				}
 			}
-			context->threadStatus = ctx__t_once_handled;
 		}
 	}
 	else if(threadIndex == 4)
 	{
 		HASH_ITER(hh_sock4, db->contexts_by_sock4, context, ctxt_tmp){ // READ
 			if(context->pollfd_index < 0){
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 	//#endif
 #ifdef WITH_WEBSOCKETS
 			if(context->wsi){
 				// Websocket are already handled above
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 #endif
@@ -1987,38 +1921,32 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 				do{
 					rc = packet__read(db, context);
 					if(rc){
-						context->threadStatus = ctx__t_once_handled;
 						do_disconnect(db, context, rc);
 						continue;
 					}
 				}while(SSL_DATA_PENDING(context));
-				context->threadStatus = ctx__t_once_handled;
 			}else{
 #ifdef WITH_EPOLL
 				if(events & (EPOLLERR | EPOLLHUP)){
 #else
 				if(context->pollfd_index >= 0 && pollfds[context->pollfd_index].revents & (POLLERR | POLLNVAL | POLLHUP)){
 #endif
-					context->threadStatus = ctx__t_once_handled;
 					do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 					continue;
 				}
 			}
-			context->threadStatus = ctx__t_once_handled;
 		}
 	}
 	else if(threadIndex == 5)
 	{
 		HASH_ITER(hh_sock5, db->contexts_by_sock5, context, ctxt_tmp){ // READ
 			if(context->pollfd_index < 0){
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 	//#endif
 #ifdef WITH_WEBSOCKETS
 			if(context->wsi){
 				// Websocket are already handled above
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 #endif
@@ -2040,38 +1968,32 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 				do{
 					rc = packet__read(db, context);
 					if(rc){
-						context->threadStatus = ctx__t_once_handled;
 						do_disconnect(db, context, rc);
 						continue;
 					}
 				}while(SSL_DATA_PENDING(context));
-				context->threadStatus = ctx__t_once_handled;
 			}else{
 #ifdef WITH_EPOLL
 				if(events & (EPOLLERR | EPOLLHUP)){
 #else
 				if(context->pollfd_index >= 0 && pollfds[context->pollfd_index].revents & (POLLERR | POLLNVAL | POLLHUP)){
 #endif
-					context->threadStatus = ctx__t_once_handled;
 					do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 					continue;
 				}
 			}
-			context->threadStatus = ctx__t_once_handled;
 		}
 	}
 	else if(threadIndex == 6)
 	{
 		HASH_ITER(hh_sock6, db->contexts_by_sock6, context, ctxt_tmp){ // READ
 			if(context->pollfd_index < 0){
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 	//#endif
 #ifdef WITH_WEBSOCKETS
 			if(context->wsi){
 				// Websocket are already handled above
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 #endif
@@ -2093,38 +2015,32 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 				do{
 					rc = packet__read(db, context);
 					if(rc){
-						context->threadStatus = ctx__t_once_handled;
 						do_disconnect(db, context, rc);
 						continue;
 					}
 				}while(SSL_DATA_PENDING(context));
-				context->threadStatus = ctx__t_once_handled;
 			}else{
 #ifdef WITH_EPOLL
 				if(events & (EPOLLERR | EPOLLHUP)){
 #else
 				if(context->pollfd_index >= 0 && pollfds[context->pollfd_index].revents & (POLLERR | POLLNVAL | POLLHUP)){
 #endif
-					context->threadStatus = ctx__t_once_handled;
 					do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 					continue;
 				}
 			}
-			context->threadStatus = ctx__t_once_handled;
 		}
 	}
 	else if(threadIndex == 7)
 	{
 		HASH_ITER(hh_sock7, db->contexts_by_sock7, context, ctxt_tmp){ // READ
 			if(context->pollfd_index < 0){
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 	//#endif
 #ifdef WITH_WEBSOCKETS
 			if(context->wsi){
 				// Websocket are already handled above
-				context->threadStatus = ctx__t_once_handled;
 				continue;
 			}
 #endif
@@ -2146,24 +2062,20 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 				do{
 					rc = packet__read(db, context);
 					if(rc){
-						context->threadStatus = ctx__t_once_handled;
 						do_disconnect(db, context, rc);
 						continue;
 					}
 				}while(SSL_DATA_PENDING(context));
-				context->threadStatus = ctx__t_once_handled;
 			}else{
 #ifdef WITH_EPOLL
 				if(events & (EPOLLERR | EPOLLHUP)){
 #else
 				if(context->pollfd_index >= 0 && pollfds[context->pollfd_index].revents & (POLLERR | POLLNVAL | POLLHUP)){
 #endif
-					context->threadStatus = ctx__t_once_handled;
 					do_disconnect(db, context, MOSQ_ERR_CONN_LOST);
 					continue;
 				}
 			}
-			context->threadStatus = ctx__t_once_handled;
 		}
 	}
 
@@ -2171,57 +2083,64 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 	{
 		case 0:
 			HASH_ITER(hh_sock0, db->contexts_by_sock0, context, ctxt_tmp){
-				if(context->forceToDelete > 0 && context->threadStatus == ctx__t_once_handled) {
-					context->state = mosq_cs_duplicate;
+				context->onceHandled = 1;
+				if(context->forceToDelete > 0) {
 					do_disconnect(db, context, MOSQ_ERR_NOT_SUPPORTED);
 				}
 			}
 			break;
 		case 1:
 			HASH_ITER(hh_sock1, db->contexts_by_sock1, context, ctxt_tmp){
-				if(context->forceToDelete > 0 && context->threadStatus == ctx__t_once_handled) {
+				context->onceHandled = 1;
+				if(context->forceToDelete > 0) {
 					do_disconnect(db, context, MOSQ_ERR_NOT_SUPPORTED);
 				}
 			}
 			break;
 		case 2:
 			HASH_ITER(hh_sock2, db->contexts_by_sock2, context, ctxt_tmp){
-				if(context->forceToDelete > 0 && context->threadStatus == ctx__t_once_handled) {
+				context->onceHandled = 1;
+				if(context->forceToDelete > 0) {
 					do_disconnect(db, context, MOSQ_ERR_NOT_SUPPORTED);
 				}
 			}
 			break;
 		case 3:
 			HASH_ITER(hh_sock3, db->contexts_by_sock3, context, ctxt_tmp){
-				if(context->forceToDelete > 0 && context->threadStatus == ctx__t_once_handled) {
+				context->onceHandled = 1;
+				if(context->forceToDelete > 0) {
 					do_disconnect(db, context, MOSQ_ERR_NOT_SUPPORTED);
 				}
 			}
 			break;
 		case 4:
 			HASH_ITER(hh_sock4, db->contexts_by_sock4, context, ctxt_tmp){
-				if(context->forceToDelete > 0 && context->threadStatus == ctx__t_once_handled) {
+				context->onceHandled = 1;
+				if(context->forceToDelete > 0) {
 					do_disconnect(db, context, MOSQ_ERR_NOT_SUPPORTED);
 				}
 			}
 			break;
 		case 5:
 			HASH_ITER(hh_sock5, db->contexts_by_sock5, context, ctxt_tmp){
-				if(context->forceToDelete > 0 && context->threadStatus == ctx__t_once_handled) {
+				context->onceHandled = 1;
+				if(context->forceToDelete > 0) {
 					do_disconnect(db, context, MOSQ_ERR_NOT_SUPPORTED);
 				}
 			}
 			break;
 		case 6:
 			HASH_ITER(hh_sock6, db->contexts_by_sock6, context, ctxt_tmp){
-				if(context->forceToDelete > 0 && context->threadStatus == ctx__t_once_handled) {
+				context->onceHandled = 1;
+				if(context->forceToDelete > 0) {
 					do_disconnect(db, context, MOSQ_ERR_NOT_SUPPORTED);
 				}
 			}
 			break;
 		case 7:
 			HASH_ITER(hh_sock7, db->contexts_by_sock7, context, ctxt_tmp){
-				if(context->forceToDelete > 0 && context->threadStatus == ctx__t_once_handled) {
+				context->onceHandled = 1;
+				if(context->forceToDelete > 0) {
 					do_disconnect(db, context, MOSQ_ERR_NOT_SUPPORTED);
 				}
 			}
@@ -3583,13 +3502,18 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 			loop_handle_reads_writes(db, pollfds);
 
 			WaitForSingleObject(db->socket_mutex, INFINITE);
+			if(!db->run)
+			{
+				ReleaseMutex(db->socket_mutex);
+				continue;
+			}
 			for(i=0; i<listensock_count; i++){ // first two listen sockets
 				if(pollfds[i].revents & (POLLIN | POLLPRI)){
 					while(net__socket_accept(db, listensock[i]) != NULL){
 					}
 				}
 			}
-			ReleaseMutex(db->socket_mutex);	
+			ReleaseMutex(db->socket_mutex);
 		}
 		
 #endif
@@ -3670,7 +3594,7 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 
 	} // END WHILE RUN
 
-
+	db->run = 0;
 	
 #ifdef WITH_EPOLL
 	(void) close(db->epollfd);

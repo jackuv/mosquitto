@@ -385,6 +385,7 @@ int main(int argc, char *argv[])
 	InitializeSRWLock(&int_db.hh_rw_lock);
 	
 	run = 1;
+	int_db.run = 1;
 	rc = mosquitto_main_loop_threaded(&int_db, listensock, listensock_count);
 
 	log__printf(NULL, MOSQ_LOG_INFO, "mosquitto version %s terminating", VERSION);

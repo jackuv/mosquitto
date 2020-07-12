@@ -168,7 +168,6 @@ static void subhier_clean(struct mosquitto_db *db, struct mosquitto__subhier **s
 	struct mosquitto__subhier *peer, *subhier_tmp;
 	struct mosquitto__subleaf *leaf, *nextleaf;
 
-	AcquireSRWLockExclusive(&db->hh_rw_lock);
 	HASH_ITER(hh, *subhier, peer, subhier_tmp){
 		leaf = peer->subs;
 		while(leaf){
@@ -185,7 +184,6 @@ static void subhier_clean(struct mosquitto_db *db, struct mosquitto__subhier **s
 		HASH_DELETE(hh, *subhier, peer);
 		mosquitto__free(peer);
 	}
-	ReleaseSRWLockExclusive(&db->hh_rw_lock);
 }
 
 int db__close(struct mosquitto_db *db)

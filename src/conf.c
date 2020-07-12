@@ -211,6 +211,12 @@ static void config__init_reload(struct mosquitto_db *db, struct mosquitto__confi
 	config->vayo_topic_mask = NULL;
 	mosquitto__free(config->vayo_http_url);
 	config->vayo_http_url = NULL;
+	mosquitto__free(config->vayo_auth_client_mask);
+	config->vayo_auth_client_mask = NULL;
+	mosquitto__free(config->vayo_auth_server_mask);
+	config->vayo_auth_server_mask = NULL;
+
+	
 	/* Jack's patch */
 	
 	config__cleanup_plugins(config);
@@ -379,6 +385,15 @@ void config__cleanup(struct mosquitto__config *config)
 		mosquitto__free(config->vayo_http_url);
 		config->vayo_http_url = NULL;
 	}
+	if (config->vayo_auth_client_mask) {
+		mosquitto__free(config->vayo_auth_client_mask);
+		config->vayo_auth_client_mask = NULL;
+	}
+	if (config->vayo_auth_server_mask) {
+		mosquitto__free(config->vayo_auth_server_mask);
+		config->vayo_auth_server_mask = NULL;
+	}
+	
 	/* Jack's patch */
 }
 
@@ -621,6 +636,10 @@ void config__copy(struct mosquitto__config *src, struct mosquitto__config *dest)
 	dest->vayo_topic_mask = src->vayo_topic_mask;
 	mosquitto__free(dest->vayo_http_url);
 	dest->vayo_http_url = src->vayo_http_url;
+	mosquitto__free(dest->vayo_auth_client_mask);
+	dest->vayo_auth_client_mask = src->vayo_auth_client_mask;
+	mosquitto__free(dest->vayo_auth_server_mask);
+	dest->vayo_auth_server_mask = src->vayo_auth_server_mask;
 	/* Jack's patch */
 
 #ifdef WITH_WEBSOCKETS
@@ -828,6 +847,8 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 	config->vayo_client_mask = NULL;
 	config->vayo_topic_mask = NULL;
 	config->vayo_http_url = NULL;
+	config->vayo_auth_client_mask = NULL;
+	config->vayo_auth_server_mask = NULL;
 
 	while(fgets_extending(buf, buflen, fptr)){
 		(*lineno)++;
@@ -861,6 +882,14 @@ int config__read_file_core(struct mosquitto__config *config, bool reload, struct
 					token = strtok_r(NULL, " ", &saveptr);
 					config->vayo_topic_mask = mosquitto__strdup(token);
 					log__printf(NULL, MOSQ_LOG_INFO, "[Patch] vayo_topic_mask: [%s] loaded for usage", config->vayo_topic_mask);
+				} else if(!strcmp(token, "vayo_auth_client_mask"))	{
+					token = strtok_r(NULL, " ", &saveptr);
+					config->vayo_auth_client_mask = mosquitto__strdup(token);
+					log__printf(NULL, MOSQ_LOG_INFO, "[Patch] vayo_auth_client_mask: [%s] loaded for usage", config->vayo_auth_client_mask);
+				} else if(!strcmp(token, "vayo_auth_server_mask"))	{
+					token = strtok_r(NULL, " ", &saveptr);
+					config->vayo_auth_server_mask = mosquitto__strdup(token);
+					log__printf(NULL, MOSQ_LOG_INFO, "[Patch] vayo_auth_server_mask: [%s] loaded for usage", config->vayo_auth_server_mask);
 				} else if (!strcmp(token, "vayo_http_url")) {
 					token = strtok_r(NULL, " ", &saveptr);
 					config->vayo_http_url = mosquitto__strdup(token);

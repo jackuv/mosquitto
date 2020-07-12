@@ -135,13 +135,6 @@ enum mosquitto__transport {
 	mosq_t_sctp = 3
 };
 
-enum context__thread_status {
-	ctx__t_in_unhandled = 0,
-	ctx__t_in_sockets = 1,
-	ctx__t_in_sockets_in_ids = 2,
-	ctx__t_once_handled = 3
-};
-
 struct mosquitto__alias{
 	char *topic;
 	uint16_t alias;
@@ -372,8 +365,9 @@ struct mosquitto {
 #endif
 	char* vayo_client_mask;
 	char* vayo_topic_mask;
+	
 	int threadIndex;
-	enum context__thread_status threadStatus;
+	int onceHandled;
 	int forceToDelete;
 };
 

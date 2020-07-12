@@ -83,6 +83,7 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock)
 
 	context->vayo_client_mask = db->config->vayo_client_mask;
 	context->vayo_topic_mask = db->config->vayo_topic_mask;
+	context->vayo_topic_mask = db->config->vayo_topic_mask;
 	
 #ifdef WITH_TLS
 	context->ssl = NULL;
@@ -92,8 +93,8 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock)
 		int threadIndex = rand() % MAX_THREADS;
 		// int threadIndex = getThreadIndex(db);
 		context->threadIndex = threadIndex;
-		context->threadStatus = ctx__t_in_unhandled;
 		context->forceToDelete = 0;
+		context->onceHandled = 0;
 		// WaitForSingleObject(db->id_mutex, INFINITE);
 		if(threadIndex == 0)
 		{
@@ -127,8 +128,7 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock)
 		{
 			HASH_ADD(hh_sock7, db->contexts_by_sock7, sock, sizeof(context->sock), context);
 		}
-		context->threadStatus = ctx__t_in_sockets;
-
+		
 		// ReleaseMutex(db->id_mutex);
 	}
 	return context;
@@ -353,37 +353,39 @@ void context__free_disused(struct mosquitto_db *db, int threadIndex)
 
 void context__remove_from_by_id(struct mosquitto_db *db, struct mosquitto *context)
 {
-	if(context->threadStatus != ctx__t_in_sockets_in_ids && context->threadStatus != ctx__t_once_handled)
-	{
-		context->removed_from_by_id = true;
-		return;
-	}
-		
 	if(context->removed_from_by_id == false && context->id){
 		switch (context->threadIndex)
 		{
 			case 0:
-				HASH_DELETE(hh_id0, db->contexts_by_id0, context);
+				if(db->contexts_by_id0)
+					HASH_DELETE(hh_id0, db->contexts_by_id0, context);
 				break;
 			case 1:
-				HASH_DELETE(hh_id1, db->contexts_by_id1, context);
+				if(db->contexts_by_id1)
+					HASH_DELETE(hh_id1, db->contexts_by_id1, context);
 				break;
 			case 2:
-				HASH_DELETE(hh_id2, db->contexts_by_id2, context);
+				if(db->contexts_by_id2)
+					HASH_DELETE(hh_id2, db->contexts_by_id2, context);
 				break;
 			case 3:
-				HASH_DELETE(hh_id3, db->contexts_by_id3, context);
+				if(db->contexts_by_id3)
+					HASH_DELETE(hh_id3, db->contexts_by_id3, context);
 				break;
 			case 4:
-				HASH_DELETE(hh_id4, db->contexts_by_id4, context);
+				if(db->contexts_by_id4)
+					HASH_DELETE(hh_id4, db->contexts_by_id4, context);
 				break;
 			case 5:
-				HASH_DELETE(hh_id5, db->contexts_by_id5, context);
+				if(db->contexts_by_id5)
+					HASH_DELETE(hh_id5, db->contexts_by_id5, context);
 				break;
 			case 6:
-				HASH_DELETE(hh_id6, db->contexts_by_id6, context);
+				if(db->contexts_by_id6)
+					HASH_DELETE(hh_id6, db->contexts_by_id6, context);
 				break;
 			case 7:
+				if(db->contexts_by_id7)
 				HASH_DELETE(hh_id7, db->contexts_by_id7, context);
 				break;
 		}

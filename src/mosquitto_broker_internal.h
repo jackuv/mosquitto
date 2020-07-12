@@ -326,6 +326,9 @@ struct mosquitto__config {
 	char *vayo_end_segment;
 	char *vayo_client_mask;
 	char *vayo_topic_mask;
+	char *vayo_auth_client_mask;
+	char *vayo_auth_server_mask;
+	
 	char *vayo_http_url;
 	int vayo_http_timeout;
 	
@@ -487,6 +490,7 @@ struct mosquitto_db{
 	HANDLE socket_mutex;
 	HANDLE id_mutex;
 	DWORD threadIds[MAX_THREADS];
+	int run;
 
 	SRWLOCK hh_rw_lock;
 };
