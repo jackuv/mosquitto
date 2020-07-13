@@ -187,6 +187,7 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 	for(i = 0; i < MAX_THREADS; i++)
 	{
 		found_context = NULL;
+		AcquireSRWLockShared(&db->hh_id_rw_lock[i]);
 		switch (i)
 		{
 			case 0:
@@ -215,12 +216,13 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 				break;
 			default:
 				return 1;
-				break;
 		}
+		ReleaseSRWLockShared(&db->hh_id_rw_lock[i]);
 
 		if(found_context)
 			found_contexts[duplicates++] = found_context;
 	}
+	
 
 
 	if(duplicates < 2)

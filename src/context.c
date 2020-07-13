@@ -354,42 +354,36 @@ void context__free_disused(struct mosquitto_db *db, int threadIndex)
 void context__remove_from_by_id(struct mosquitto_db *db, struct mosquitto *context)
 {
 	if(context->removed_from_by_id == false && context->id){
+		AcquireSRWLockExclusive(&db->hh_id_rw_lock[context->threadIndex]);
 		switch (context->threadIndex)
 		{
 			case 0:
-				if(db->contexts_by_id0)
-					HASH_DELETE(hh_id0, db->contexts_by_id0, context);
+				HASH_DELETE(hh_id0, db->contexts_by_id0, context);
 				break;
 			case 1:
-				if(db->contexts_by_id1)
-					HASH_DELETE(hh_id1, db->contexts_by_id1, context);
+				HASH_DELETE(hh_id1, db->contexts_by_id1, context);
 				break;
 			case 2:
-				if(db->contexts_by_id2)
-					HASH_DELETE(hh_id2, db->contexts_by_id2, context);
+				HASH_DELETE(hh_id2, db->contexts_by_id2, context);
 				break;
 			case 3:
-				if(db->contexts_by_id3)
-					HASH_DELETE(hh_id3, db->contexts_by_id3, context);
+				HASH_DELETE(hh_id3, db->contexts_by_id3, context);
 				break;
 			case 4:
-				if(db->contexts_by_id4)
-					HASH_DELETE(hh_id4, db->contexts_by_id4, context);
+				HASH_DELETE(hh_id4, db->contexts_by_id4, context);
 				break;
 			case 5:
-				if(db->contexts_by_id5)
-					HASH_DELETE(hh_id5, db->contexts_by_id5, context);
+				HASH_DELETE(hh_id5, db->contexts_by_id5, context);
 				break;
 			case 6:
-				if(db->contexts_by_id6)
-					HASH_DELETE(hh_id6, db->contexts_by_id6, context);
+				HASH_DELETE(hh_id6, db->contexts_by_id6, context);
 				break;
 			case 7:
-				if(db->contexts_by_id7)
 				HASH_DELETE(hh_id7, db->contexts_by_id7, context);
 				break;
 		}
 		context->removed_from_by_id = true;
+		ReleaseSRWLockExclusive(&db->hh_id_rw_lock[context->threadIndex]);
 	}
 }
 

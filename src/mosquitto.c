@@ -383,6 +383,9 @@ int main(int argc, char *argv[])
 		return 1;
 	}	
 	InitializeSRWLock(&int_db.hh_rw_lock);
+
+	for(i=0;i<MAX_THREADS;i++)
+		InitializeSRWLock(&int_db.hh_id_rw_lock[i]);
 	
 	run = 1;
 	int_db.run = 1;

@@ -493,6 +493,7 @@ struct mosquitto_db{
 	int run;
 
 	SRWLOCK hh_rw_lock;
+	SRWLOCK hh_id_rw_lock[MAX_THREADS];
 };
 
 enum mosquitto__bridge_direction{
