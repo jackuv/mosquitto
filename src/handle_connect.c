@@ -300,8 +300,6 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 			if(found_context->forceToDelete > 0)
 				continue;
 
-			// if(found_context->threadIndex == context->threadIndex)
-			
 			if(context->clean_start == true){
 				sub__clean_session(db, found_context);
 			}
@@ -316,7 +314,8 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 			
 			if(found_context->threadIndex == context->threadIndex)
 				do_disconnect(db, found_context, MOSQ_ERR_SUCCESS);
-					   		
+
+			// do we need to close a current incoming socket?
 			/*if(found_context->forceToDelete == 0)
 			{
 				context->forceToDelete = 1;
