@@ -38,6 +38,7 @@ char *mosquitto__strdup(const char *s);
 void memory__set_limit(size_t lim);
 #endif
 
+int split (const char *txt, char delim, char ***tokens);
 int  vayo_startsWith(const char *pre, const char *str);
 int  vayo__strend(const char *s, const char *t);
 char *vayo__strndup(const char *s, size_t n);

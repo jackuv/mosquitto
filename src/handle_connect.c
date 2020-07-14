@@ -431,14 +431,23 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 				}
 			} else
 			{
-				if(db->config->vayo_auth_client_mask && db->config->vayo_auth_server_mask)
+				if(db->config->vayo_auth_masks_length > 0)
 				{
-					if(!vayo_startsWith(db->config->vayo_auth_client_mask, context->id) && !vayo_startsWith(db->config->vayo_auth_server_mask, context->id))
+					int found = 0;
+					for(i=0; i<db->config->vayo_auth_masks_length; i++) {
+						if(vayo_startsWith(db->config->vayo_auth_masks[i], context->id)) {
+							found = 1;
+							break;
+						}
+					
+					}
+					if(!found)
 					{
 						rc = MOSQ_ERR_NOMEM;
 						goto error;
 					}
 				}
+				
 			}			
 		}
 	}

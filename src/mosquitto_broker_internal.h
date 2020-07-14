@@ -326,8 +326,8 @@ struct mosquitto__config {
 	char *vayo_end_segment;
 	char *vayo_client_mask;
 	char *vayo_topic_mask;
-	char *vayo_auth_client_mask;
-	char *vayo_auth_server_mask;
+	char **vayo_auth_masks;
+	int    vayo_auth_masks_length;
 	
 	char *vayo_http_url;
 	int vayo_http_timeout;
