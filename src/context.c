@@ -312,7 +312,7 @@ void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context)
 	db->ll_for_free = context;
 }
 
-void context__free_disused(struct mosquitto_db *db, int threadIndex)
+void context__free_disused(struct mosquitto_db *db)
 {
 	// WaitForSingleObject(db->socket_mutex, INFINITE);
 	

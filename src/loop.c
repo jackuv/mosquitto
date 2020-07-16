@@ -1676,7 +1676,8 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 #endif
 
 	while(run){
-		context__free_disused(db, threadIndex);
+		if(threadIndex == 0)
+			context__free_disused(db);
 							
 #ifdef WITH_SYS_TREE
 		if(threadIndex == 0 && db->config->sys_interval > 0){

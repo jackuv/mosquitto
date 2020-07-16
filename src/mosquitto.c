@@ -388,6 +388,12 @@ int main(int argc, char *argv[])
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create sub mutex");
 		return 1;
 	}
+	int_db.msg_mutex = CreateMutex( NULL, FALSE, NULL);
+	if (int_db.msg_mutex == NULL) 
+	{
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create msg mutex");
+		return 1;
+	}
 	
 
 	for(i=0;i<MAX_THREADS;i++)
@@ -585,6 +591,7 @@ int main(int argc, char *argv[])
 	CloseHandle(int_db.socket_mutex);
 	CloseHandle(int_db.id_mutex);
 	CloseHandle(int_db.sub_mutex);
+	CloseHandle(int_db.msg_mutex);
 	
 	if(config.pid_file){
 		remove(config.pid_file);

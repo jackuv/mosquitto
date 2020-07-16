@@ -490,6 +490,7 @@ struct mosquitto_db{
 	HANDLE socket_mutex;
 	HANDLE id_mutex;
 	HANDLE sub_mutex;
+	HANDLE msg_mutex;
 	DWORD threadIds[MAX_THREADS];
 	int run;
 
@@ -695,7 +696,7 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock);
 void context__cleanup(struct mosquitto_db *db, struct mosquitto *context, bool do_free);
 void context__disconnect(struct mosquitto_db *db, struct mosquitto *context);
 void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context);
-void context__free_disused(struct mosquitto_db *db, int threadIndex);
+void context__free_disused(struct mosquitto_db *db);
 void context__send_will(struct mosquitto_db *db, struct mosquitto *context);
 void context__remove_from_by_id(struct mosquitto_db *db, struct mosquitto *context);
 
