@@ -482,7 +482,7 @@ struct mosquitto_db{
 	int retained_count;
 #endif
 	int persistence_changes;
-	struct mosquitto *ll_for_free[MAX_THREADS];
+	struct mosquitto *ll_for_free;
 	
 #ifdef WITH_EPOLL
 	int epollfd;
@@ -494,7 +494,7 @@ struct mosquitto_db{
 	int run;
 
 	SRWLOCK hh_id_rw_lock[MAX_THREADS];
-	// SRWLOCK hh_socket_rw_lock[MAX_THREADS];
+	SRWLOCK hh_socket_rw_lock[MAX_THREADS];
 };
 
 enum mosquitto__bridge_direction{

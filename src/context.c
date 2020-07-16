@@ -308,8 +308,8 @@ void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context)
 		context->id = NULL;
 	}
 
-	context->for_free_next = db->ll_for_free[threadIndex];
-	db->ll_for_free[threadIndex] = context;
+	context->for_free_next = db->ll_for_free;
+	db->ll_for_free = context;
 }
 
 void context__free_disused(struct mosquitto_db *db, int threadIndex)
@@ -322,8 +322,8 @@ void context__free_disused(struct mosquitto_db *db, int threadIndex)
 #endif
 	assert(db);
 
-	context = db->ll_for_free[threadIndex];
-	db->ll_for_free[threadIndex] = NULL;
+	context = db->ll_for_free;
+	db->ll_for_free = NULL;
 
 	while(context){
 #ifdef WITH_WEBSOCKETS
@@ -332,7 +332,7 @@ void context__free_disused(struct mosquitto_db *db, int threadIndex)
 			if(last){
 				last->for_free_next = context;
 			}else{
-				db->ll_for_free[threadIndex] = context;
+				db->ll_for_free = context;
 			}
 			next = context->for_free_next;
 			context->for_free_next = NULL;
