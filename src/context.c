@@ -93,7 +93,6 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock)
 		int threadIndex = rand() % MAX_THREADS;
 		// int threadIndex = getThreadIndex(db);
 		context->threadIndex = threadIndex;
-		context->forceToDelete = 0;
 		context->onceHandled = 0;
 		// WaitForSingleObject(db->id_mutex, INFINITE);
 		if(threadIndex == 0)
@@ -354,7 +353,6 @@ void context__free_disused(struct mosquitto_db *db, int threadIndex)
 void context__remove_from_by_id(struct mosquitto_db *db, struct mosquitto *context)
 {
 	if(context->removed_from_by_id == false && context->id){
-		AcquireSRWLockExclusive(&db->hh_id_rw_lock[context->threadIndex]);
 		switch (context->threadIndex)
 		{
 			case 0:
@@ -383,7 +381,6 @@ void context__remove_from_by_id(struct mosquitto_db *db, struct mosquitto *conte
 				break;
 		}
 		context->removed_from_by_id = true;
-		ReleaseSRWLockExclusive(&db->hh_id_rw_lock[context->threadIndex]);
 	}
 }
 

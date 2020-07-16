@@ -381,11 +381,21 @@ int main(int argc, char *argv[])
 	{
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create context mutex");
 		return 1;
-	}	
-	InitializeSRWLock(&int_db.hh_rw_lock);
+	}
+	int_db.sub_mutex = CreateMutex( NULL, FALSE, NULL);
+	if (int_db.sub_mutex == NULL) 
+	{
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create sub mutex");
+		return 1;
+	}
+	
 
 	for(i=0;i<MAX_THREADS;i++)
+	{
 		InitializeSRWLock(&int_db.hh_id_rw_lock[i]);
+		// InitializeSRWLock(&int_db.hh_socket_rw_lock[i]);
+	}
+		
 	
 	run = 1;
 	int_db.run = 1;
@@ -574,6 +584,7 @@ int main(int argc, char *argv[])
 	
 	CloseHandle(int_db.socket_mutex);
 	CloseHandle(int_db.id_mutex);
+	CloseHandle(int_db.sub_mutex);
 	
 	if(config.pid_file){
 		remove(config.pid_file);

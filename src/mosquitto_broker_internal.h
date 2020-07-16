@@ -465,7 +465,7 @@ struct mosquitto_db{
 	struct mosquitto **bridges;
 #endif
 	struct clientid__index_hash *clientid_index_hash;
-	struct mosquitto_msg_store *msg_store[MAX_THREADS];
+	struct mosquitto_msg_store *msg_store;
 	struct mosquitto_msg_store_load *msg_store_load;
 #ifdef WITH_BRIDGE
 	int bridge_count;
@@ -489,11 +489,12 @@ struct mosquitto_db{
 #endif
 	HANDLE socket_mutex;
 	HANDLE id_mutex;
+	HANDLE sub_mutex;
 	DWORD threadIds[MAX_THREADS];
 	int run;
 
-	SRWLOCK hh_rw_lock;
 	SRWLOCK hh_id_rw_lock[MAX_THREADS];
+	// SRWLOCK hh_socket_rw_lock[MAX_THREADS];
 };
 
 enum mosquitto__bridge_direction{

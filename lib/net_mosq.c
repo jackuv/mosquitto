@@ -190,6 +190,10 @@ int net__socket_close(struct mosquitto_db *db, struct mosquitto *mosq)
 int net__socket_close(struct mosquitto *mosq)
 #endif
 {
+#ifdef WITH_BROKER
+	AcquireSRWLockExclusive(&db->hh_socket_rw_lock[mosq->threadIndex]);
+#endif	
+	
 	int rc = 0;
 
 	assert(mosq);
@@ -220,7 +224,6 @@ int net__socket_close(struct mosquitto *mosq)
 	{
 		if(mosq->sock != INVALID_SOCKET){
 #ifdef WITH_BROKER
-			// AcquireSRWLockExclusive(&db->socket_rw_lock[mosq->threadIndex]);
 			if(mosq->threadIndex == 0)
 			{
 				HASH_DELETE(hh_sock0, db->contexts_by_sock0, mosq);
@@ -253,7 +256,6 @@ int net__socket_close(struct mosquitto *mosq)
 			{
 				HASH_DELETE(hh_sock7, db->contexts_by_sock7, mosq);
 			}
-			// ReleaseSRWLockExclusive(&db->socket_rw_lock[mosq->threadIndex]);
 			
 #endif
 			rc = COMPAT_CLOSE(mosq->sock);
@@ -265,8 +267,8 @@ int net__socket_close(struct mosquitto *mosq)
 	if(mosq->listener){
 		mosq->listener->client_count--;
 	}
+	ReleaseSRWLockExclusive(&db->hh_socket_rw_lock[mosq->threadIndex]);
 #endif
-
 	return rc;
 }
 

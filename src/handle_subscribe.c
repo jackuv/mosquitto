@@ -107,8 +107,7 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 				if (!tsub)
 					return MOSQ_ERR_NOMEM;
 				sub = tsub;
-			}
-			else if (!vayo__strend(sub, "/#")) { // add client id at the end of the topic
+			} else if (!vayo__strend(sub, "/#")) { // add client id at the end of the topic
 				tsub = vayo__topic_with_id(sub, context->id, &slen);
 				mosquitto__free(sub);
 				if (!tsub) {

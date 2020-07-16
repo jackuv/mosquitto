@@ -104,7 +104,7 @@ static int persist__message_store_save(struct mosquitto_db *db, FILE *db_fptr)
 	
 	for(int j = i; j < max; j++)
 	{
-		stored = db->msg_store[j];
+		stored = db->msg_store;
 		while(stored){
 			if(stored->ref_count < 1 || stored->topic == NULL){
 				stored = stored->next;
@@ -414,12 +414,10 @@ static int persist__subs_retain_save(struct mosquitto_db *db, FILE *db_fptr, str
 		}
 	}
 
-	AcquireSRWLockShared(&db->hh_rw_lock);
 	HASH_ITER(hh, node->children, subhier, subhier_tmp){
 		persist__subs_retain_save(db, db_fptr, subhier, thistopic, level+1);
 	}
-	ReleaseSRWLockShared(&db->hh_rw_lock);
-		
+			
 	mosquitto__free(thistopic);
 	return MOSQ_ERR_SUCCESS;
 }
@@ -428,14 +426,12 @@ static int persist__subs_retain_save_all(struct mosquitto_db *db, FILE *db_fptr)
 {
 	struct mosquitto__subhier *subhier, *subhier_tmp;
 
-	AcquireSRWLockShared(&db->hh_rw_lock);
 	HASH_ITER(hh, db->subs, subhier, subhier_tmp){
 		if(subhier->children){
 			persist__subs_retain_save(db, db_fptr, subhier->children, "", 0);
 		}
 	}
-	ReleaseSRWLockShared(&db->hh_rw_lock);
-	
+		
 	return MOSQ_ERR_SUCCESS;
 }
 

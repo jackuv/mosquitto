@@ -225,9 +225,9 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 	
 
 
-	if(duplicates < 2)
+	for(i = 0; i < duplicates; i++)
 	{
-		found_context = found_contexts[0];
+		found_context = found_contexts[i];
 		if(found_context){
 			//enum mosquitto_client_state state = mosquitto__get_state(found_context);
 		
@@ -288,47 +288,10 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 			found_context->clean_start = true;
 			found_context->session_expiry_interval = 0;
 			mosquitto__set_state(found_context, mosq_cs_duplicate);
-			found_context->forceToDelete = 2;
-			if(found_context->threadIndex == context->threadIndex)
-				do_disconnect(db, found_context, MOSQ_ERR_SUCCESS);
-		}
-	} else
-	{
-		for(i = 0; i < duplicates; i++) // other thread duplicates handling, kill all of them!
-		{
-			found_context = found_contexts[i];
-			if(found_context->forceToDelete > 0)
-				continue;
-
-			if(context->clean_start == true){
-				sub__clean_session(db, found_context);
-			}
-			session_expiry__remove(found_context);
-			will_delay__remove(found_context);
-			will__clear(found_context);
-
-			found_context->clean_start = true;
-			found_context->session_expiry_interval = 0;
-			mosquitto__set_state(found_context, mosq_cs_duplicate);
-			found_context->forceToDelete = 3;
+			do_disconnect(db, found_context, MOSQ_ERR_SUCCESS);
 			
-			if(found_context->threadIndex == context->threadIndex)
-				do_disconnect(db, found_context, MOSQ_ERR_SUCCESS);
-
-			// do we need to close a current incoming socket?
-			/*if(found_context->forceToDelete == 0)
-			{
-				context->forceToDelete = 1;
-				return 1;
-			}*/
-			/*if(found_context->onceHandled == 0)
-			{
-				
-			}*/
 		}
-	}
-
-	
+	} 	
 
 	rc = acl__find_acls(db, context);
 	if(rc){

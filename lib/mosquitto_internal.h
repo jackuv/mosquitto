@@ -368,7 +368,6 @@ struct mosquitto {
 	
 	int threadIndex;
 	int onceHandled;
-	int forceToDelete;
 };
 
 #define STREMPTY(str) (str[0] == '\0')
