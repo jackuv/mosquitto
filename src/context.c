@@ -297,7 +297,6 @@ void context__disconnect(struct mosquitto_db *db, struct mosquitto *context)
 
 void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context)
 {
-	int threadIndex = context->threadIndex;
 	if(context->state == mosq_cs_disused) return;
 
 	mosquitto__set_state(context, mosq_cs_disused);
@@ -308,8 +307,10 @@ void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context)
 		context->id = NULL;
 	}
 
+	WaitForSingleObject(db->socket_mutex, INFINITE);
 	context->for_free_next = db->ll_for_free;
 	db->ll_for_free = context;
+	ReleaseMutex(db->socket_mutex);
 }
 
 void context__free_disused(struct mosquitto_db *db)
