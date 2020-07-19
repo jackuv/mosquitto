@@ -56,7 +56,7 @@ static struct mosquitto *persist__find_or_add_context(struct mosquitto_db *db, c
 	{
 		HASH_FIND(hh_id0, db->contexts_by_id0, client_id, strlen(client_id), context);
 		if(!context){
-			context = context__init(db, -1);
+			context = context__init(db, -1, 0);
 			if(!context) return NULL;
 			context->id = mosquitto__strdup(client_id);
 			if(!context->id){
@@ -76,7 +76,7 @@ static struct mosquitto *persist__find_or_add_context(struct mosquitto_db *db, c
 	{
 		HASH_FIND(hh_id1, db->contexts_by_id1, client_id, strlen(client_id), context);
 		if(!context){
-			context = context__init(db, -1);
+			context = context__init(db, -1, 1);
 			if(!context) return NULL;
 			context->id = mosquitto__strdup(client_id);
 			if(!context->id){
@@ -96,7 +96,7 @@ static struct mosquitto *persist__find_or_add_context(struct mosquitto_db *db, c
 	{
 		HASH_FIND(hh_id2, db->contexts_by_id2, client_id, strlen(client_id), context);
 		if(!context){
-			context = context__init(db, -1);
+			context = context__init(db, -1, 2);
 			if(!context) return NULL;
 			context->id = mosquitto__strdup(client_id);
 			if(!context->id){
@@ -116,7 +116,7 @@ static struct mosquitto *persist__find_or_add_context(struct mosquitto_db *db, c
 	{
 		HASH_FIND(hh_id3, db->contexts_by_id3, client_id, strlen(client_id), context);
 		if(!context){
-			context = context__init(db, -1);
+			context = context__init(db, -1, 3);
 			if(!context) return NULL;
 			context->id = mosquitto__strdup(client_id);
 			if(!context->id){
@@ -136,7 +136,7 @@ static struct mosquitto *persist__find_or_add_context(struct mosquitto_db *db, c
 	{
 		HASH_FIND(hh_id4, db->contexts_by_id4, client_id, strlen(client_id), context);
 		if(!context){
-			context = context__init(db, -1);
+			context = context__init(db, -1, 4);
 			if(!context) return NULL;
 			context->id = mosquitto__strdup(client_id);
 			if(!context->id){
@@ -156,7 +156,7 @@ static struct mosquitto *persist__find_or_add_context(struct mosquitto_db *db, c
 	{
 		HASH_FIND(hh_id5, db->contexts_by_id5, client_id, strlen(client_id), context);
 		if(!context){
-			context = context__init(db, -1);
+			context = context__init(db, -1, 5);
 			if(!context) return NULL;
 			context->id = mosquitto__strdup(client_id);
 			if(!context->id){
@@ -176,7 +176,7 @@ static struct mosquitto *persist__find_or_add_context(struct mosquitto_db *db, c
 	{
 		HASH_FIND(hh_id6, db->contexts_by_id6, client_id, strlen(client_id), context);
 		if(!context){
-			context = context__init(db, -1);
+			context = context__init(db, -1, 6);
 			if(!context) return NULL;
 			context->id = mosquitto__strdup(client_id);
 			if(!context->id){
@@ -196,7 +196,7 @@ static struct mosquitto *persist__find_or_add_context(struct mosquitto_db *db, c
 	{
 		HASH_FIND(hh_id7, db->contexts_by_id7, client_id, strlen(client_id), context);
 		if(!context){
-			context = context__init(db, -1);
+			context = context__init(db, -1, 7);
 			if(!context) return NULL;
 			context->id = mosquitto__strdup(client_id);
 			if(!context->id){

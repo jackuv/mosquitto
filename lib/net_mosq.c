@@ -190,10 +190,6 @@ int net__socket_close(struct mosquitto_db *db, struct mosquitto *mosq)
 int net__socket_close(struct mosquitto *mosq)
 #endif
 {
-#ifdef WITH_BROKER
-	AcquireSRWLockExclusive(&db->hh_socket_rw_lock[mosq->threadIndex]);
-#endif	
-	
 	int rc = 0;
 
 	assert(mosq);
@@ -267,7 +263,6 @@ int net__socket_close(struct mosquitto *mosq)
 	if(mosq->listener){
 		mosq->listener->client_count--;
 	}
-	ReleaseSRWLockExclusive(&db->hh_socket_rw_lock[mosq->threadIndex]);
 #endif
 	return rc;
 }

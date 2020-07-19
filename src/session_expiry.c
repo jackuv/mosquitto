@@ -107,7 +107,7 @@ void session_expiry__remove_all(struct mosquitto_db *db)
 	
 }
 
-void session_expiry__check(struct mosquitto_db *db, time_t now)
+void session_expiry__check(struct mosquitto_db *db, time_t now, int threadIndex)
 {
 	struct session_expiry_list *item, *tmp;
 	struct mosquitto *context;
@@ -117,7 +117,7 @@ void session_expiry__check(struct mosquitto_db *db, time_t now)
 	last_check = now;
 
 	DL_FOREACH_SAFE(expiry_list, item, tmp){
-		if(item->context->session_expiry_time < now){
+		if(item->context->session_expiry_time < now && item->context->threadIndex == threadIndex){
 
 			context = item->context;
 			session_expiry__remove(context);

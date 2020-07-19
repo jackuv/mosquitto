@@ -585,6 +585,7 @@ void db__messages_delete_list(struct mosquitto_db *db, struct mosquitto_client_m
 /* EXT- */
 int db__messages_delete(struct mosquitto_db *db, struct mosquitto *context)
 {
+	WaitForSingleObject(db->msg_mutex, INFINITE);
 	if(!context) return MOSQ_ERR_INVAL;
 
 	db__messages_delete_list(db, &context->msgs_in.inflight);
@@ -602,6 +603,7 @@ int db__messages_delete(struct mosquitto_db *db, struct mosquitto *context)
 	context->msgs_out.msg_count = 0;
 	context->msgs_out.msg_count12 = 0;
 
+	ReleaseMutex(db->msg_mutex);
 	return MOSQ_ERR_SUCCESS;
 }
 

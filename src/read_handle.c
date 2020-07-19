@@ -34,6 +34,7 @@ int handle__packet(struct mosquitto_db *db, struct mosquitto *context)
 {
 	if(!context) return MOSQ_ERR_INVAL;
 
+	int res;
 	switch((context->in_packet.command)&0xF0){
 		case CMD_PINGREQ:
 			return handle__pingreq(context);
@@ -44,19 +45,34 @@ int handle__packet(struct mosquitto_db *db, struct mosquitto *context)
 		case CMD_PUBCOMP:
 			return handle__pubackcomp(db, context, "PUBCOMP");
 		case CMD_PUBLISH:
-			return handle__publish(db, context);
+			WaitForSingleObject(db->read_mutex, INFINITE);
+			res = handle__publish(db, context);
+			ReleaseMutex(db->read_mutex);
+			return res;
 		case CMD_PUBREC:
 			return handle__pubrec(db, context);
 		case CMD_PUBREL:
 			return handle__pubrel(db, context);
 		case CMD_CONNECT:
-			return handle__connect(db, context);
+			WaitForSingleObject(db->read_mutex, INFINITE);	
+			res = handle__connect(db, context);
+			ReleaseMutex(db->read_mutex);
+			return res;
 		case CMD_DISCONNECT:
-			return handle__disconnect(db, context);
+			WaitForSingleObject(db->read_mutex, INFINITE);
+			res = handle__disconnect(db, context);
+			ReleaseMutex(db->read_mutex);
+			return res;
 		case CMD_SUBSCRIBE:
-			return handle__subscribe(db, context);
+			WaitForSingleObject(db->read_mutex, INFINITE);
+			res = handle__subscribe(db, context);
+			ReleaseMutex(db->read_mutex);
+			return res;
 		case CMD_UNSUBSCRIBE:
-			return handle__unsubscribe(db, context);
+			WaitForSingleObject(db->read_mutex, INFINITE);
+			res = handle__unsubscribe(db, context);
+			ReleaseMutex(db->read_mutex);
+			return res;
 #ifdef WITH_BRIDGE
 		case CMD_CONNACK:
 			return handle__connack(db, context);
@@ -66,7 +82,10 @@ int handle__packet(struct mosquitto_db *db, struct mosquitto *context)
 			return handle__unsuback(context);
 #endif
 		case CMD_AUTH:
-			return handle__auth(db, context);
+			WaitForSingleObject(db->read_mutex, INFINITE);
+			res = handle__auth(db, context);
+			ReleaseMutex(db->read_mutex);
+			return res;
 		default:
 			/* If we don't recognise the command, return an error straight away. */
 			return MOSQ_ERR_PROTOCOL;

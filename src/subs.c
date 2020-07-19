@@ -947,7 +947,7 @@ int sub__clean_session(struct mosquitto_db *db, struct mosquitto *context)
 			}
 			leaf = leaf->next;
 		}
-		/*if(context->subs[i]->subs == NULL
+		if(context->subs[i]->subs == NULL
 				&& context->subs[i]->children == NULL
 				&& context->subs[i]->retained == NULL
 				&& context->subs[i]->shared == NULL
@@ -958,7 +958,7 @@ int sub__clean_session(struct mosquitto_db *db, struct mosquitto *context)
 			do{
 				hier = tmp_remove_subs(hier);
 			}while(hier);
-		}*/
+		}
 	}
 	mosquitto__free(context->subs);
 	context->subs = NULL;

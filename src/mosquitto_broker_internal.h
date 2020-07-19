@@ -488,14 +488,14 @@ struct mosquitto_db{
 	int epollfd;
 #endif
 	HANDLE socket_mutex;
-	HANDLE id_mutex;
 	HANDLE sub_mutex;
 	HANDLE msg_mutex;
+	HANDLE read_mutex;
+	HANDLE delete_mutex;
 	DWORD threadIds[MAX_THREADS];
 	int run;
 
-	SRWLOCK hh_id_rw_lock[MAX_THREADS];
-	SRWLOCK hh_socket_rw_lock[MAX_THREADS];
+	// SRWLOCK hh_socket_rw_lock[MAX_THREADS];
 };
 
 enum mosquitto__bridge_direction{
@@ -628,7 +628,7 @@ int send__auth(struct mosquitto_db *db, struct mosquitto *context, int reason_co
  * ============================================================ */
 void net__broker_init(void);
 void net__broker_cleanup(void);
-struct mosquitto* net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock);
+struct mosquitto* net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock, int threadIndex);
 int net__socket_listen(struct mosquitto__listener *listener);
 int net__socket_get_address(mosq_sock_t sock, char *buf, int len);
 int net__tls_load_verify(struct mosquitto__listener *listener);
@@ -692,11 +692,11 @@ int sub__messages_queue(struct mosquitto_db *db, const char *source_id, const ch
 /* ============================================================
  * Context functions
  * ============================================================ */
-struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock);
+struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock, int threadIndex);
 void context__cleanup(struct mosquitto_db *db, struct mosquitto *context, bool do_free);
 void context__disconnect(struct mosquitto_db *db, struct mosquitto *context);
 void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context);
-void context__free_disused(struct mosquitto_db *db);
+void context__free_disused(struct mosquitto_db *db, int threadIndex);
 void context__send_will(struct mosquitto_db *db, struct mosquitto *context);
 void context__remove_from_by_id(struct mosquitto_db *db, struct mosquitto *context);
 
@@ -759,7 +759,7 @@ int mosquitto_security_auth_continue(struct mosquitto_db *db, struct mosquitto *
 int session_expiry__add(struct mosquitto_db *db, struct mosquitto *context);
 void session_expiry__remove(struct mosquitto *context);
 void session_expiry__remove_all(struct mosquitto_db *db);
-void session_expiry__check(struct mosquitto_db *db, time_t now);
+void session_expiry__check(struct mosquitto_db *db, time_t now, int threadIndex);
 void session_expiry__send_all(struct mosquitto_db *db);
 
 /* ============================================================

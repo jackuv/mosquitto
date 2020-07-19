@@ -200,7 +200,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 
 	switch (reason) {
 		case LWS_CALLBACK_ESTABLISHED:
-			mosq = context__init(db, WEBSOCKET_CLIENT);
+			mosq = context__init(db, WEBSOCKET_CLIENT, 0);
 			if(mosq){
 				p = libwebsockets_get_protocol(wsi);
 				mosq->listener = p->user;

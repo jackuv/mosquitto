@@ -376,12 +376,6 @@ int main(int argc, char *argv[])
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create socket mutex");
 		return 1;
     }
-	int_db.id_mutex = CreateMutex( NULL, FALSE, NULL);
-	if (int_db.id_mutex == NULL) 
-	{
-		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create context mutex");
-		return 1;
-	}
 	int_db.sub_mutex = CreateMutex( NULL, FALSE, NULL);
 	if (int_db.sub_mutex == NULL) 
 	{
@@ -394,13 +388,24 @@ int main(int argc, char *argv[])
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create msg mutex");
 		return 1;
 	}
+	int_db.read_mutex = CreateMutex( NULL, FALSE, NULL);
+	if (int_db.read_mutex == NULL) 
+	{
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create read_mutex mutex");
+		return 1;
+	}
+	int_db.delete_mutex = CreateMutex( NULL, FALSE, NULL);
+	if (int_db.delete_mutex == NULL) 
+    {
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create delete_mutex mutex");
+		return 1;
+    }
 	
 
-	for(i=0;i<MAX_THREADS;i++)
+	/*for(i=0;i<MAX_THREADS;i++)
 	{
-		InitializeSRWLock(&int_db.hh_id_rw_lock[i]);
 		InitializeSRWLock(&int_db.hh_socket_rw_lock[i]);
-	}
+	}*/
 		
 	
 	run = 1;
@@ -589,9 +594,10 @@ int main(int argc, char *argv[])
 
 	
 	CloseHandle(int_db.socket_mutex);
-	CloseHandle(int_db.id_mutex);
 	CloseHandle(int_db.sub_mutex);
 	CloseHandle(int_db.msg_mutex);
+	CloseHandle(int_db.read_mutex);
+	CloseHandle(int_db.delete_mutex);
 	
 	if(config.pid_file){
 		remove(config.pid_file);

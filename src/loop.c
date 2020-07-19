@@ -55,6 +55,7 @@ Contributors:
 #include "sys_tree.h"
 #include "time_mosq.h"
 #include "util_mosq.h"
+#include "will_mosq.h"
 
 extern bool flag_reload;
 #ifdef WITH_PERSISTENCE
@@ -328,7 +329,7 @@ void accept_connections(LPVOID *lpParam)
 	struct mosquitto *context;
 	while(run)
 	{
-		context = net__socket_accept(db, listensock);
+		context = net__socket_accept(db, listensock, 1);
 	}
 }
 
@@ -478,8 +479,7 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reaso
 	}
 
 	int threadIndex = context->threadIndex;
-	AcquireSRWLockExclusive(&db->hh_id_rw_lock[threadIndex]);
-	
+		
 #ifdef WITH_WEBSOCKETS
 	if(context->wsi){
 		if(context->state == mosq_cs_duplicate){
@@ -493,37 +493,41 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reaso
 			libwebsocket_callback_on_writable(context->ws_context, context->wsi);
 		}
 		if(context->sock != INVALID_SOCKET){
-			if(context->threadIndex == 0)
+			if(threadIndex == 0)
 			{
 				HASH_DELETE(hh_sock0, db->contexts_by_sock0, context);
 			}
-			else if(context->threadIndex == 1)
+			else if(threadIndex == 1)
 			{
 				HASH_DELETE(hh_sock1, db->contexts_by_sock1, context);
 			}
-			else if(context->threadIndex == 2)
+			else if(threadIndex == 2)
 			{
 				HASH_DELETE(hh_sock2, db->contexts_by_sock2, context);
 			}
-			else if(context->threadIndex == 3)
+			else if(threadIndex == 3)
 			{
 				HASH_DELETE(hh_sock3, db->contexts_by_sock3, context);
 			}
-			else if(context->threadIndex == 4)
+			else if(threadIndex == 4)
 			{
 				HASH_DELETE(hh_sock4, db->contexts_by_sock4, context);
 			}
-			else if(context->threadIndex == 5)
+			else if(threadIndex == 5)
 			{
 				HASH_DELETE(hh_sock5, db->contexts_by_sock5, context);
 			}
-			else if(context->threadIndex == 6)
+			else if(threadIndex == 6)
 			{
 				HASH_DELETE(hh_sock6, db->contexts_by_sock6, context);
 			}
-			else if(context->threadIndex == 7)
+			else if(threadIndex == 7)
 			{
 				HASH_DELETE(hh_sock7, db->contexts_by_sock7, context);
+			}
+			else
+			{
+				return;
 			}
 			
 #ifdef WITH_EPOLL
@@ -585,7 +589,6 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reaso
 #endif
 		context__disconnect(db, context);
 	}
-	ReleaseSRWLockExclusive(&db->hh_id_rw_lock[threadIndex]);
 }
 
 
@@ -1574,6 +1577,138 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 		}
 	}
 	
+	switch (threadIndex)
+	{
+		case 0:
+			HASH_ITER(hh_sock0, db->contexts_by_sock0, context, ctxt_tmp){
+				if(context->forceToDelete > 0){
+					if(context->forceToDelete == 2)
+						sub__clean_session(db, context);
+					session_expiry__remove(context);
+					will_delay__remove(context);
+					will__clear(context);
+
+					context->clean_start = true;
+					context->session_expiry_interval = 0;
+					mosquitto__set_state(context, mosq_cs_duplicate);
+					do_disconnect(db, context, MOSQ_ERR_SUCCESS);
+				}
+			}
+			break;
+		case 1:
+			HASH_ITER(hh_sock1, db->contexts_by_sock1, context, ctxt_tmp){
+				if(context->forceToDelete > 0){
+					if(context->forceToDelete == 2)
+						sub__clean_session(db, context);
+					session_expiry__remove(context);
+					will_delay__remove(context);
+					will__clear(context);
+
+					context->clean_start = true;
+					context->session_expiry_interval = 0;
+					mosquitto__set_state(context, mosq_cs_duplicate);
+					do_disconnect(db, context, MOSQ_ERR_SUCCESS);
+				}
+			}
+			break;
+		case 2:
+			HASH_ITER(hh_sock2, db->contexts_by_sock2, context, ctxt_tmp){
+				if(context->forceToDelete > 0){
+					if(context->forceToDelete == 2)
+						sub__clean_session(db, context);
+					session_expiry__remove(context);
+					will_delay__remove(context);
+					will__clear(context);
+
+					context->clean_start = true;
+					context->session_expiry_interval = 0;
+					mosquitto__set_state(context, mosq_cs_duplicate);
+					do_disconnect(db, context, MOSQ_ERR_SUCCESS);
+				}
+			}
+			break;
+		case 3:
+			HASH_ITER(hh_sock3, db->contexts_by_sock3, context, ctxt_tmp){
+				if(context->forceToDelete > 0){
+					if(context->forceToDelete == 2)
+						sub__clean_session(db, context);
+					session_expiry__remove(context);
+					will_delay__remove(context);
+					will__clear(context);
+
+					context->clean_start = true;
+					context->session_expiry_interval = 0;
+					mosquitto__set_state(context, mosq_cs_duplicate);
+					do_disconnect(db, context, MOSQ_ERR_SUCCESS);
+				}
+			}
+			break;
+		case 4:
+			HASH_ITER(hh_sock4, db->contexts_by_sock4, context, ctxt_tmp){
+				if(context->forceToDelete > 0){
+					if(context->forceToDelete == 2)
+						sub__clean_session(db, context);
+					session_expiry__remove(context);
+					will_delay__remove(context);
+					will__clear(context);
+
+					context->clean_start = true;
+					context->session_expiry_interval = 0;
+					mosquitto__set_state(context, mosq_cs_duplicate);
+					do_disconnect(db, context, MOSQ_ERR_SUCCESS);
+				}
+			}
+			break;
+		case 5:
+			HASH_ITER(hh_sock5, db->contexts_by_sock5, context, ctxt_tmp){
+				if(context->forceToDelete > 0){
+					if(context->forceToDelete == 2)
+						sub__clean_session(db, context);
+					session_expiry__remove(context);
+					will_delay__remove(context);
+					will__clear(context);
+
+					context->clean_start = true;
+					context->session_expiry_interval = 0;
+					mosquitto__set_state(context, mosq_cs_duplicate);
+					do_disconnect(db, context, MOSQ_ERR_SUCCESS);
+				}
+			}
+			break;
+		case 6:
+			HASH_ITER(hh_sock6, db->contexts_by_sock6, context, ctxt_tmp){
+				if(context->forceToDelete > 0){
+					if(context->forceToDelete == 2)
+						sub__clean_session(db, context);
+					session_expiry__remove(context);
+					will_delay__remove(context);
+					will__clear(context);
+
+					context->clean_start = true;
+					context->session_expiry_interval = 0;
+					mosquitto__set_state(context, mosq_cs_duplicate);
+					do_disconnect(db, context, MOSQ_ERR_SUCCESS);
+				}
+			}
+			break;
+		case 7:
+			HASH_ITER(hh_sock7, db->contexts_by_sock7, context, ctxt_tmp){
+				if(context->forceToDelete > 0){
+					if(context->forceToDelete == 2)
+						sub__clean_session(db, context);
+					session_expiry__remove(context);
+					will_delay__remove(context);
+					will__clear(context);
+
+					context->clean_start = true;
+					context->session_expiry_interval = 0;
+					mosquitto__set_state(context, mosq_cs_duplicate);
+					do_disconnect(db, context, MOSQ_ERR_SUCCESS);
+				}
+			}
+			break;
+	}
+				
 }
 
 DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
@@ -1676,8 +1811,7 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 #endif
 
 	while(run){
-		if(threadIndex == 0)
-			context__free_disused(db);
+		context__free_disused(db, threadIndex);
 							
 #ifdef WITH_SYS_TREE
 		if(threadIndex == 0 && db->config->sys_interval > 0){
@@ -2928,7 +3062,7 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 		}else
 		{
 			loop_handle_reads_writes(db, pollfds, threadIndex);
-
+			
 			WaitForSingleObject(db->socket_mutex, INFINITE);
 			if(!db->run)
 			{
@@ -2937,7 +3071,7 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 			}
 			for(i=0; i<listensock_count; i++){ // first two listen sockets
 				if(pollfds[i].revents & (POLLIN | POLLPRI)){
-					while(net__socket_accept(db, listensock[i]) != NULL){
+					while(net__socket_accept(db, listensock[i], threadIndex) != NULL){
 					}
 				}
 			}
@@ -2945,9 +3079,11 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 		}
 		
 #endif
+		WaitForSingleObject(db->socket_mutex, INFINITE);
 		now = time(NULL);
-		session_expiry__check(db, now);
+		session_expiry__check(db, now, threadIndex);
 		will_delay__check(db, now);
+		ReleaseMutex(db->socket_mutex);
 #ifdef WITH_PERSISTENCE
 		if(db->config->persistence && db->config->autosave_interval)
 		{

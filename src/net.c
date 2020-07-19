@@ -97,7 +97,7 @@ static void net__print_error(int log, const char *format_str)
 }
 
 
-struct mosquitto* net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock)
+struct mosquitto* net__socket_accept(struct mosquitto_db *db, mosq_sock_t listensock, int threadIndex)
 {
 	int i;
 	int j;
@@ -174,7 +174,7 @@ struct mosquitto* net__socket_accept(struct mosquitto_db *db, mosq_sock_t listen
 		}
 	}
 
-	new_context = context__init(db, new_sock);
+	new_context = context__init(db, new_sock, threadIndex);
 	if(!new_context){
 		COMPAT_CLOSE(new_sock);
 		return NULL;

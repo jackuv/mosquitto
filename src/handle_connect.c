@@ -170,20 +170,14 @@ int http_get_request(const char* fmtUrl, const char* id, const char* user, const
 
 int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, void *auth_data_out, uint16_t auth_data_out_len)
 {
-	WaitForSingleObject(db->id_mutex, INFINITE);
-	int threadIndex = getThreadIndex(db);
 	struct mosquitto *found_context;
-	struct mosquitto *found_contexts[MAX_THREADS];
 	struct mosquitto__subleaf *leaf;
 	mosquitto_property *connack_props = NULL;
 	uint8_t connect_ack = 0;
 	int i;
 	int rc;
-	int duplicates = 0;
-
+	
 	/* Find if this client already has an entry. This must be done *after* any security checks. */
-	for(i = 0; i < MAX_THREADS; i++)
-		found_contexts[i] = NULL;
 	for(i = 0; i < MAX_THREADS; i++)
 	{
 		found_context = NULL;
@@ -216,16 +210,7 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 			default:
 				return 1;
 		}
-		
-		if(found_context)
-			found_contexts[duplicates++] = found_context;
-	}
-	
 
-
-	for(i = 0; i < duplicates; i++)
-	{
-		found_context = found_contexts[i];
 		if(found_context){
 			//enum mosquitto_client_state state = mosquitto__get_state(found_context);
 		
@@ -237,11 +222,11 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 				/* Client is already connected, disconnect old version. This is
 				 * done in context__cleanup() below. */
 				if(db->config->connection_messages == true){
-					log__printf(NULL, MOSQ_LOG_ERR, "Client %s already connected, p_tidx:%d, c_tidx:%d, t%d.", context->id, found_context->threadIndex,  context->threadIndex, threadIndex);
+					log__printf(NULL, MOSQ_LOG_ERR, "Client %s already connected, p_tidx:%d, c_tidx:%d.", context->id, found_context->threadIndex,  context->threadIndex);
 				}
 			}
-		
-			if(context->clean_start == false && found_context->session_expiry_interval > 0){
+					
+			if(context->clean_start == false && found_context->session_expiry_interval > 0 && found_context->threadIndex == context->threadIndex){
 				if(context->protocol == mosq_p_mqtt311 || context->protocol == mosq_p_mqtt5){
 					connect_ack |= 0x01;
 				}
@@ -276,27 +261,35 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 				}
 			}
 
-			if(context->clean_start == true){
-				sub__clean_session(db, found_context);
+			if(found_context->threadIndex != context->threadIndex)
+			{
+				found_context->forceToDelete = 1;
+				if(context->clean_start == true){
+					found_context->forceToDelete = 2;
+				}
+			} else
+			{
+				if(context->clean_start == true){
+					sub__clean_session(db, found_context);
+				}
+				session_expiry__remove(found_context);
+				will_delay__remove(found_context);
+				will__clear(found_context);
+
+				found_context->clean_start = true;
+				found_context->session_expiry_interval = 0;
+				mosquitto__set_state(found_context, mosq_cs_duplicate);
+				do_disconnect(db, found_context, MOSQ_ERR_SUCCESS);	
 			}
-			session_expiry__remove(found_context);
-			will_delay__remove(found_context);
-			will__clear(found_context);
-
-			found_context->clean_start = true;
-			found_context->session_expiry_interval = 0;
-			mosquitto__set_state(found_context, mosq_cs_duplicate);
-			do_disconnect(db, found_context, MOSQ_ERR_SUCCESS);
-			
 		}
-	} 	
-
+	}
+	
 	rc = acl__find_acls(db, context);
 	if(rc){
 		free(auth_data_out);
 		return rc;
 	}
-
+		
 	if(db->config->connection_messages == true){
 		if(context->is_bridge){
 			if(context->username){
@@ -459,12 +452,10 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 	mosquitto__set_state(context, mosq_cs_active);
 	rc = send__connack(db, context, connect_ack, CONNACK_ACCEPTED, connack_props);
 	mosquitto_property_free_all(&connack_props);
-	ReleaseMutex(db->id_mutex);
 	return rc;
 error:
 	free(auth_data_out);
 	mosquitto_property_free_all(&connack_props);
-	ReleaseMutex(db->id_mutex);
 	return rc;
 }
 

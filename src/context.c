@@ -30,7 +30,7 @@ Contributors:
 
 #include "uthash.h"
 
-struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock)
+struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock, int threadIndex)
 {
 	struct mosquitto *context;
 	char address[1024];
@@ -90,11 +90,11 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock)
 #endif
 
 	if((int)context->sock >= 0){
-		int threadIndex = rand() % MAX_THREADS;
+		// int threadIndex = rand() % MAX_THREADS;
 		// int threadIndex = getThreadIndex(db);
 		context->threadIndex = threadIndex;
 		context->onceHandled = 0;
-		// WaitForSingleObject(db->id_mutex, INFINITE);
+		context->forceToDelete = 0;
 		if(threadIndex == 0)
 		{
 			HASH_ADD(hh_sock0, db->contexts_by_sock0, sock, sizeof(context->sock), context);	
@@ -127,8 +127,6 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock)
 		{
 			HASH_ADD(hh_sock7, db->contexts_by_sock7, sock, sizeof(context->sock), context);
 		}
-		
-		// ReleaseMutex(db->id_mutex);
 	}
 	return context;
 }
@@ -297,6 +295,7 @@ void context__disconnect(struct mosquitto_db *db, struct mosquitto *context)
 
 void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context)
 {
+	WaitForSingleObject(db->delete_mutex, INFINITE);
 	if(context->state == mosq_cs_disused) return;
 
 	mosquitto__set_state(context, mosq_cs_disused);
@@ -307,15 +306,14 @@ void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context)
 		context->id = NULL;
 	}
 
-	WaitForSingleObject(db->socket_mutex, INFINITE);
 	context->for_free_next = db->ll_for_free;
 	db->ll_for_free = context;
-	ReleaseMutex(db->socket_mutex);
+	ReleaseMutex(db->delete_mutex);
 }
 
-void context__free_disused(struct mosquitto_db *db)
+void context__free_disused(struct mosquitto_db *db, int threadIndex)
 {
-	WaitForSingleObject(db->socket_mutex, INFINITE);
+	WaitForSingleObject(db->delete_mutex, INFINITE);
 	
 	struct mosquitto *context, *next;
 #ifdef WITH_WEBSOCKETS
@@ -327,7 +325,7 @@ void context__free_disused(struct mosquitto_db *db)
 	db->ll_for_free = NULL;
 
 	while(context){
-#ifdef WITH_WEBSOCKETS
+		#ifdef WITH_WEBSOCKETS
 		if(context->wsi){
 			/* Don't delete yet, lws hasn't finished with it */
 			if(last){
@@ -343,11 +341,12 @@ void context__free_disused(struct mosquitto_db *db)
 #endif
 		{
 			next = context->for_free_next;
-			context__cleanup(db, context, true);
+			if(context->threadIndex == threadIndex)
+				context__cleanup(db, context, true);
 			context = next;
 		}
 	}
-	ReleaseMutex(db->socket_mutex);
+	ReleaseMutex(db->delete_mutex);
 }
 
 
