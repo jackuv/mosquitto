@@ -66,7 +66,7 @@ extern int run;
 #ifdef WITH_EPOLL
 static void loop_handle_reads_writes(struct mosquitto_db *db, mosq_sock_t sock, uint32_t events);
 #else
-static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pollfds);
+static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pollfds, int threadIndex);
 #endif
 
 #ifdef WITH_WEBSOCKETS
@@ -477,7 +477,8 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reaso
 		return;
 	}
 
-	AcquireSRWLockExclusive(&db->hh_id_rw_lock[context->threadIndex]);
+	int threadIndex = context->threadIndex;
+	AcquireSRWLockExclusive(&db->hh_id_rw_lock[threadIndex]);
 	
 #ifdef WITH_WEBSOCKETS
 	if(context->wsi){
@@ -584,17 +585,16 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reaso
 #endif
 		context__disconnect(db, context);
 	}
-	ReleaseSRWLockExclusive(&db->hh_id_rw_lock[context->threadIndex]);
+	ReleaseSRWLockExclusive(&db->hh_id_rw_lock[threadIndex]);
 }
 
 
 #ifdef WITH_EPOLL
 static void loop_handle_reads_writes(struct mosquitto_db *db, mosq_sock_t sock, uint32_t events)
 #else
-static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pollfds) // read write + pings
+static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pollfds, int threadIndex) // read write + pings
 #endif
 {
-	int threadIndex = getThreadIndex(db);
 	struct mosquitto *context;
 #ifndef WITH_EPOLL
 	struct mosquitto *ctxt_tmp;
@@ -2927,7 +2927,7 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 			}
 		}else
 		{
-			loop_handle_reads_writes(db, pollfds);
+			loop_handle_reads_writes(db, pollfds, threadIndex);
 
 			WaitForSingleObject(db->socket_mutex, INFINITE);
 			if(!db->run)

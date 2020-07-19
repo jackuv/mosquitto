@@ -399,7 +399,7 @@ int main(int argc, char *argv[])
 	for(i=0;i<MAX_THREADS;i++)
 	{
 		InitializeSRWLock(&int_db.hh_id_rw_lock[i]);
-		// InitializeSRWLock(&int_db.hh_socket_rw_lock[i]);
+		InitializeSRWLock(&int_db.hh_socket_rw_lock[i]);
 	}
 		
 	

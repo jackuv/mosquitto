@@ -315,7 +315,7 @@ void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context)
 
 void context__free_disused(struct mosquitto_db *db)
 {
-	// WaitForSingleObject(db->socket_mutex, INFINITE);
+	WaitForSingleObject(db->socket_mutex, INFINITE);
 	
 	struct mosquitto *context, *next;
 #ifdef WITH_WEBSOCKETS
@@ -347,7 +347,7 @@ void context__free_disused(struct mosquitto_db *db)
 			context = next;
 		}
 	}
-	// ReleaseMutex(db->socket_mutex);
+	ReleaseMutex(db->socket_mutex);
 }
 
 

@@ -741,9 +741,7 @@ int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub
 		tokens->topic_len = 0;
 	}
 
-	if(strcmp(context->id, "d:alk2da:electra_ac:1234567890AB") == 0)
-		subhier = NULL;
-		
+	
 	HASH_FIND(hh, *root, tokens->topic, tokens->topic_len, subhier);
 		
 	if(!subhier){
