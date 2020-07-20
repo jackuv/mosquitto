@@ -1970,7 +1970,6 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 #endif
 
 		time_count = 0;
-
 		if(threadIndex == 0)
 		{
 			HASH_ITER(hh_sock0, db->contexts_by_sock0, context, ctxt_tmp)
