@@ -525,11 +525,7 @@ void do_disconnect(struct mosquitto_db *db, struct mosquitto *context, int reaso
 			{
 				HASH_DELETE(hh_sock7, db->contexts_by_sock7, context);
 			}
-			else
-			{
-				return;
-			}
-			
+						
 #ifdef WITH_EPOLL
 			if (epoll_ctl(db->epollfd, EPOLL_CTL_DEL, context->sock, &ev) == -1) {
 				log__printf(NULL, MOSQ_LOG_DEBUG, "Error in epoll disconnecting websockets: %s", strerror(errno));
@@ -3078,11 +3074,11 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 		}
 		
 #endif
-		WaitForSingleObject(db->socket_mutex, INFINITE);
+		WaitForSingleObject(db->delete_mutex, INFINITE);
 		now = time(NULL);
 		session_expiry__check(db, now, threadIndex);
 		will_delay__check(db, now);
-		ReleaseMutex(db->socket_mutex);
+		ReleaseMutex(db->delete_mutex);
 #ifdef WITH_PERSISTENCE
 		if(db->config->persistence && db->config->autosave_interval)
 		{

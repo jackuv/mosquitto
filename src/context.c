@@ -272,6 +272,7 @@ void context__disconnect(struct mosquitto_db *db, struct mosquitto *context)
 		return;
 	}
 
+	WaitForSingleObject(db->delete_mutex, INFINITE);
 	net__socket_close(db, context);
 
 	context__send_will(db, context);
@@ -291,6 +292,7 @@ void context__disconnect(struct mosquitto_db *db, struct mosquitto *context)
 		session_expiry__add(db, context);
 	}
 	mosquitto__set_state(context, mosq_cs_disconnected);
+	ReleaseMutex(db->delete_mutex);
 }
 
 void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context)

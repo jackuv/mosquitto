@@ -358,9 +358,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 			break;
 		case 2:
 			if(dup == 0){
-				WaitForSingleObject(db->sub_mutex, INFINITE);
 				res = db__message_insert(db, context, mid, mosq_md_in, qos, retain, stored, NULL);
-				ReleaseMutex(db->sub_mutex);
 			}else{
 				res = 0;
 			}

@@ -1005,7 +1005,7 @@ int db__message_write(struct mosquitto_db *db, struct mosquitto *context)
 		return MOSQ_ERR_SUCCESS;
 	}
 
-	// WaitForSingleObject(db->msg_mutex, INFINITE);
+	WaitForSingleObject(db->msg_mutex, INFINITE);
 	DL_FOREACH_SAFE(context->msgs_in.inflight, tail, tmp){
 		msg_count++;
 		if(tail->store->message_expiry_time){
@@ -1026,7 +1026,7 @@ int db__message_write(struct mosquitto_db *db, struct mosquitto *context)
 				if(!rc){
 					tail->state = mosq_ms_wait_for_pubrel;
 				}else{
-					// ReleaseMutex(db->msg_mutex);
+					ReleaseMutex(db->msg_mutex);
 					return rc;
 				}
 				break;
@@ -1036,7 +1036,7 @@ int db__message_write(struct mosquitto_db *db, struct mosquitto *context)
 				if(!rc){
 					tail->state = mosq_ms_wait_for_pubrel;
 				}else{
-					// ReleaseMutex(db->msg_mutex);
+					ReleaseMutex(db->msg_mutex);
 					return rc;
 				}
 				break;
@@ -1087,7 +1087,7 @@ int db__message_write(struct mosquitto_db *db, struct mosquitto *context)
 				if(rc == MOSQ_ERR_SUCCESS || rc == MOSQ_ERR_OVERSIZE_PACKET){
 					db__message_remove(db, &context->msgs_out, tail);
 				}else{
-					// ReleaseMutex(db->msg_mutex);
+					ReleaseMutex(db->msg_mutex);
 					return rc;
 				}
 				break;
@@ -1101,7 +1101,7 @@ int db__message_write(struct mosquitto_db *db, struct mosquitto *context)
 				}else if(rc == MOSQ_ERR_OVERSIZE_PACKET){
 					db__message_remove(db, &context->msgs_out, tail);
 				}else{
-					// ReleaseMutex(db->msg_mutex);
+					ReleaseMutex(db->msg_mutex);
 					return rc;
 				}
 				break;
@@ -1115,7 +1115,7 @@ int db__message_write(struct mosquitto_db *db, struct mosquitto *context)
 				}else if(rc == MOSQ_ERR_OVERSIZE_PACKET){
 					db__message_remove(db, &context->msgs_out, tail);
 				}else{
-					// ReleaseMutex(db->msg_mutex);
+					ReleaseMutex(db->msg_mutex);
 					return rc;
 				}
 				break;
@@ -1125,7 +1125,7 @@ int db__message_write(struct mosquitto_db *db, struct mosquitto *context)
 				if(!rc){
 					tail->state = mosq_ms_wait_for_pubcomp;
 				}else{
-					// ReleaseMutex(db->msg_mutex);
+					ReleaseMutex(db->msg_mutex);
 					return rc;
 				}
 				break;
@@ -1156,7 +1156,7 @@ int db__message_write(struct mosquitto_db *db, struct mosquitto *context)
 			if(!rc){
 				tail->state = mosq_ms_wait_for_pubrel;
 			}else{
-				// ReleaseMutex(db->msg_mutex);
+				ReleaseMutex(db->msg_mutex);
 				return rc;
 			}
 		}
@@ -1183,7 +1183,7 @@ int db__message_write(struct mosquitto_db *db, struct mosquitto *context)
 		db__message_dequeue_first(context, &context->msgs_out);
 	}
 
-	// ReleaseMutex(db->msg_mutex);
+	ReleaseMutex(db->msg_mutex);
 	return MOSQ_ERR_SUCCESS;
 }
 

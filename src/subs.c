@@ -723,6 +723,7 @@ int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub
 	if(!strcmp(tokens->topic, "$share")){
 		if(!tokens->next || !tokens->next->next){
 			sub__topic_tokens_free(tokens);
+			ReleaseMutex(db->sub_mutex);
 			return MOSQ_ERR_PROTOCOL;
 		}
 		t = tokens->next;
@@ -736,6 +737,7 @@ int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub
 		if(!tokens->topic){
 			tokens->topic = sharename;
 			sub__topic_tokens_free(tokens);
+			ReleaseMutex(db->sub_mutex);
 			return MOSQ_ERR_PROTOCOL;
 		}
 		tokens->topic_len = 0;

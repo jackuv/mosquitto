@@ -261,14 +261,12 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 				}
 			}
 
-			if(found_context->threadIndex != context->threadIndex)
-			{
+			if(found_context->threadIndex != context->threadIndex) {
 				found_context->forceToDelete = 1;
 				if(context->clean_start == true){
 					found_context->forceToDelete = 2;
 				}
-			} else
-			{
+			} else {
 				if(context->clean_start == true){
 					sub__clean_session(db, found_context);
 				}
