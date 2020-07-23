@@ -3058,10 +3058,10 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 		{
 			loop_handle_reads_writes(db, pollfds, threadIndex);
 			
-			WaitForSingleObject(db->socket_mutex, INFINITE);
+			vayo_mutex_lock(&db->socket_mutex);
 			if(!db->run)
 			{
-				ReleaseMutex(db->socket_mutex);
+				vayo_mutex_unlock(&db->socket_mutex);	
 				continue;
 			}
 			for(i=0; i<listensock_count; i++){ // first two listen sockets
@@ -3070,15 +3070,13 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 					}
 				}
 			}
-			ReleaseMutex(db->socket_mutex);
+			vayo_mutex_unlock(&db->socket_mutex);
 		}
 		
 #endif
-		WaitForSingleObject(db->delete_mutex, INFINITE);
 		now = time(NULL);
 		session_expiry__check(db, now, threadIndex);
 		will_delay__check(db, now);
-		ReleaseMutex(db->delete_mutex);
 #ifdef WITH_PERSISTENCE
 		if(db->config->persistence && db->config->autosave_interval)
 		{
@@ -3120,10 +3118,8 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 		}
 		if(threadIndex == 0 && flag_tree_print)
 		{
-			WaitForSingleObject(db->sub_mutex, INFINITE);
 			sub__tree_print(db->subs, 0);
 			flag_tree_print = false;
-			ReleaseMutex(db->sub_mutex);
 		}
 #ifdef WITH_WEBSOCKETS
 		for(i=0; i<db->config->listener_count; i++)

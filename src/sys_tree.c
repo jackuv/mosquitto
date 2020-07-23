@@ -62,6 +62,7 @@ static void sys_tree__update_clients(struct mosquitto_db *db, char *buf)
 	static int client_max = 0;
 	static int disconnected_count = -1;
 	static int connected_count = -1;
+	static int threadClients[MAX_THREADS];
 
 	int count_total, count_by_sock;
 
@@ -83,7 +84,26 @@ static void sys_tree__update_clients(struct mosquitto_db *db, char *buf)
 	count_by_sock += HASH_CNT(hh_sock6, db->contexts_by_sock6);
 	count_by_sock += HASH_CNT(hh_sock7, db->contexts_by_sock7);
 
-			
+
+	for (int i=0; i<MAX_THREADS; i++)
+	{
+		if(threadClients[i] != db->threadClients[i])
+		{
+			int count = 0;
+			for(int j=0; j<MAX_THREADS; j++)
+			{
+				threadClients[j] = db->threadClients[j];
+				count+= threadClients[j];
+			}
+
+			snprintf(buf, BUFLEN, "%d,%d,%d,%d,%d,%d,%d,%d=%d", db->threadClients[0], db->threadClients[1], db->threadClients[2]
+				, db->threadClients[3], db->threadClients[4], db->threadClients[5], db->threadClients[6], db->threadClients[7], count);
+			db__messages_easy_queue(db, NULL, "$SYS/broker/clients/threads", SYS_TREE_QOS, strlen(buf), buf, 1, 60, NULL);
+			break;
+		}
+	}
+	
+	
 	if(client_count != count_total){
 		client_count = count_total;
 		snprintf(buf, BUFLEN, "%d", client_count);

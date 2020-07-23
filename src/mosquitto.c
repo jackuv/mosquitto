@@ -289,6 +289,41 @@ int main(int argc, char *argv[])
 	rc = mosquitto_security_init(&int_db, false);
 	if(rc) return rc;
 
+
+	/* mutex init */
+	if (vayo_mutex_init(&int_db.msg_inout_mutex)) 
+    {
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create msg_inout_mutex");
+		return 1;
+    }
+	if (vayo_mutex_init(&int_db.socket_mutex)) 
+    {
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create socket_mutex");
+		return 1;
+    }
+	if (vayo_mutex_init(&int_db.sub_mutex)) 
+    {
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create sub_mutex");
+		return 1;
+    }
+	if (vayo_mutex_init(&int_db.delete_mutex)) 
+    {
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create delete_mutex");
+		return 1;
+    }
+	
+	
+	int_db.read_mutex = CreateMutex( NULL, FALSE, NULL);
+	if (int_db.read_mutex == NULL) 
+	{
+		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create read_mutex mutex");
+		return 1;
+	}
+	for(i=0;i<MAX_THREADS;i++)
+	{
+		int_db.threadClients[i] = 0;
+		// InitializeSRWLock(&int_db.hh_socket_rw_lock[i]);
+	}
 		
 	
 #ifdef WITH_SYS_TREE
@@ -369,44 +404,7 @@ int main(int argc, char *argv[])
 #ifdef WITH_SYSTEMD
 	sd_notify(0, "READY=1");
 #endif
-
-	int_db.socket_mutex = CreateMutex( NULL, FALSE, NULL);
-	if (int_db.socket_mutex == NULL) 
-    {
-		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create socket mutex");
-		return 1;
-    }
-	int_db.sub_mutex = CreateMutex( NULL, FALSE, NULL);
-	if (int_db.sub_mutex == NULL) 
-	{
-		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create sub mutex");
-		return 1;
-	}
-	int_db.msg_mutex = CreateMutex( NULL, FALSE, NULL);
-	if (int_db.msg_mutex == NULL) 
-	{
-		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create msg mutex");
-		return 1;
-	}
-	int_db.read_mutex = CreateMutex( NULL, FALSE, NULL);
-	if (int_db.read_mutex == NULL) 
-	{
-		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create read_mutex mutex");
-		return 1;
-	}
-	int_db.delete_mutex = CreateMutex( NULL, FALSE, NULL);
-	if (int_db.delete_mutex == NULL) 
-    {
-		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create delete_mutex mutex");
-		return 1;
-    }
 	
-
-	/*for(i=0;i<MAX_THREADS;i++)
-	{
-		InitializeSRWLock(&int_db.hh_socket_rw_lock[i]);
-	}*/
-		
 	
 	run = 1;
 	int_db.run = 1;
@@ -592,13 +590,13 @@ int main(int argc, char *argv[])
 
 	mosquitto_security_module_cleanup(&int_db);
 
-	
-	CloseHandle(int_db.socket_mutex);
-	CloseHandle(int_db.sub_mutex);
-	CloseHandle(int_db.msg_mutex);
+	vayo_mutex_destroy(&int_db.msg_inout_mutex);	
+	vayo_mutex_destroy(&int_db.socket_mutex);	
+	vayo_mutex_destroy(&int_db.sub_mutex);	
+	vayo_mutex_destroy(&int_db.delete_mutex);	
+
 	CloseHandle(int_db.read_mutex);
-	CloseHandle(int_db.delete_mutex);
-	
+		
 	if(config.pid_file){
 		remove(config.pid_file);
 	}

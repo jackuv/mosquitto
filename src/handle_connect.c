@@ -327,7 +327,7 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 	connection_check_acl(db, context, &context->msgs_out.inflight);
 	connection_check_acl(db, context, &context->msgs_out.queued);
 
-
+	db->threadClients[context->threadIndex]++;
 	switch(context->threadIndex)
 	{
 		case 0:

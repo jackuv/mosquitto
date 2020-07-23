@@ -45,33 +45,23 @@ int handle__packet(struct mosquitto_db *db, struct mosquitto *context)
 		case CMD_PUBCOMP:
 			return handle__pubackcomp(db, context, "PUBCOMP");
 		case CMD_PUBLISH:
-			WaitForSingleObject(db->read_mutex, INFINITE);
 			res = handle__publish(db, context);
-			ReleaseMutex(db->read_mutex);
 			return res;
 		case CMD_PUBREC:
 			return handle__pubrec(db, context);
 		case CMD_PUBREL:
 			return handle__pubrel(db, context);
 		case CMD_CONNECT:
-			WaitForSingleObject(db->read_mutex, INFINITE);	
 			res = handle__connect(db, context);
-			ReleaseMutex(db->read_mutex);
 			return res;
 		case CMD_DISCONNECT:
-			WaitForSingleObject(db->read_mutex, INFINITE);
 			res = handle__disconnect(db, context);
-			ReleaseMutex(db->read_mutex);
 			return res;
 		case CMD_SUBSCRIBE:
-			WaitForSingleObject(db->read_mutex, INFINITE);
 			res = handle__subscribe(db, context);
-			ReleaseMutex(db->read_mutex);
 			return res;
 		case CMD_UNSUBSCRIBE:
-			WaitForSingleObject(db->read_mutex, INFINITE);
 			res = handle__unsubscribe(db, context);
-			ReleaseMutex(db->read_mutex);
 			return res;
 #ifdef WITH_BRIDGE
 		case CMD_CONNACK:
@@ -82,9 +72,7 @@ int handle__packet(struct mosquitto_db *db, struct mosquitto *context)
 			return handle__unsuback(context);
 #endif
 		case CMD_AUTH:
-			WaitForSingleObject(db->read_mutex, INFINITE);
 			res = handle__auth(db, context);
-			ReleaseMutex(db->read_mutex);
 			return res;
 		default:
 			/* If we don't recognise the command, return an error straight away. */

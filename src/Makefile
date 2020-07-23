@@ -70,6 +70,8 @@ OBJS=	mosquitto.o \
 		util_topic.o \
 		websockets.o \
 		will_delay.o \
+		asprintf.o \
+		vayo_threading.o \
 		will_mosq.o
 
 mosquitto : ${OBJS}
@@ -260,6 +262,12 @@ websockets.o : websockets.c mosquitto_broker_internal.h
 
 will_delay.o : will_delay.c mosquitto_broker_internal.h
 	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
+
+asprintf.o : asprintf.c asprintf.h
+	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@
+
+vayo_threading.o : vayo_threading.c vayo_threading.h
+	${CROSS_COMPILE}$(CC) $(LIB_CPPFLAGS) $(LIB_CFLAGS) -c $< -o $@
 
 will_mosq.o : ../lib/will_mosq.c ../lib/will_mosq.h
 	${CROSS_COMPILE}${CC} $(BROKER_CPPFLAGS) $(BROKER_CFLAGS) -c $< -o $@

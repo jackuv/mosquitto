@@ -272,7 +272,7 @@ void context__disconnect(struct mosquitto_db *db, struct mosquitto *context)
 		return;
 	}
 
-	WaitForSingleObject(db->delete_mutex, INFINITE);
+	vayo_mutex_lock(&db->delete_mutex);
 	net__socket_close(db, context);
 
 	context__send_will(db, context);
@@ -292,12 +292,11 @@ void context__disconnect(struct mosquitto_db *db, struct mosquitto *context)
 		session_expiry__add(db, context);
 	}
 	mosquitto__set_state(context, mosq_cs_disconnected);
-	ReleaseMutex(db->delete_mutex);
+	vayo_mutex_unlock(&db->delete_mutex);
 }
 
 void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context)
 {
-	WaitForSingleObject(db->delete_mutex, INFINITE);
 	if(context->state == mosq_cs_disused) return;
 
 	mosquitto__set_state(context, mosq_cs_disused);
@@ -308,21 +307,21 @@ void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context)
 		context->id = NULL;
 	}
 
+	vayo_mutex_lock(&db->delete_mutex);
 	context->for_free_next = db->ll_for_free;
 	db->ll_for_free = context;
-	ReleaseMutex(db->delete_mutex);
+	vayo_mutex_unlock(&db->delete_mutex);
 }
 
 void context__free_disused(struct mosquitto_db *db, int threadIndex)
 {
-	WaitForSingleObject(db->delete_mutex, INFINITE);
-	
 	struct mosquitto *context, *next;
 #ifdef WITH_WEBSOCKETS
 	struct mosquitto *last = NULL;
 #endif
 	assert(db);
 
+	vayo_mutex_lock(&db->delete_mutex);
 	context = db->ll_for_free;
 	db->ll_for_free = NULL;
 
@@ -348,13 +347,14 @@ void context__free_disused(struct mosquitto_db *db, int threadIndex)
 			context = next;
 		}
 	}
-	ReleaseMutex(db->delete_mutex);
+	vayo_mutex_unlock(&db->delete_mutex);
 }
 
 
 void context__remove_from_by_id(struct mosquitto_db *db, struct mosquitto *context)
 {
 	if(context->removed_from_by_id == false && context->id){
+		db->threadClients[context->threadIndex]--;
 		switch (context->threadIndex)
 		{
 			case 0:

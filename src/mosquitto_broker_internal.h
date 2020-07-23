@@ -50,6 +50,7 @@ Contributors:
 #include "mosquitto.h"
 #include "tls_mosq.h"
 #include "uthash.h"
+#include "vayo_threading.h"
 
 #define uhpa_malloc(size) mosquitto__malloc(size)
 #define uhpa_free(ptr) mosquitto__free(ptr)
@@ -383,7 +384,7 @@ struct mosquitto_msg_store{
 	struct mosquitto__listener *source_listener;
 	char **dest_ids;
 	int dest_id_count;
-	int ref_count;
+	volatile int ref_count;
 	char* topic;
 	mosquitto_property *properties;
 	mosquitto__payload_uhpa payload;
@@ -487,14 +488,15 @@ struct mosquitto_db{
 #ifdef WITH_EPOLL
 	int epollfd;
 #endif
-	HANDLE socket_mutex;
-	HANDLE sub_mutex;
-	HANDLE msg_mutex;
+	vayo_mutex msg_inout_mutex;
+	vayo_mutex socket_mutex;
+	vayo_mutex sub_mutex;
+	vayo_mutex delete_mutex;
+	
 	HANDLE read_mutex;
-	HANDLE delete_mutex;
 	DWORD threadIds[MAX_THREADS];
 	int run;
-
+	int threadClients[MAX_THREADS];
 	// SRWLOCK hh_socket_rw_lock[MAX_THREADS];
 };
 
@@ -663,7 +665,7 @@ int db__message_insert(struct mosquitto_db *db, struct mosquitto *context, uint1
 int db__message_release_incoming(struct mosquitto_db *db, struct mosquitto *context, uint16_t mid);
 int db__message_update_outgoing(struct mosquitto *context, uint16_t mid, enum mosquitto_msg_state state, int qos);
 int db__message_write(struct mosquitto_db *db, struct mosquitto *context);
-void db__message_dequeue_first(struct mosquitto *context, struct mosquitto_msg_data *msg_data);
+void db__message_dequeue_first(struct mosquitto *context, struct mosquitto_msg_data *msg_data, struct mosquitto_db *db);
 int db__messages_delete(struct mosquitto_db *db, struct mosquitto *context);
 int db__messages_easy_queue(struct mosquitto_db *db, struct mosquitto *context, const char *topic, int qos, uint32_t payloadlen, const void *payload, int retain, uint32_t message_expiry_interval, mosquitto_property **properties);
 int db__message_store(struct mosquitto_db *db, const struct mosquitto *source, uint16_t source_mid, char *topic, int qos, uint32_t payloadlen, mosquitto__payload_uhpa *payload, int retain, struct mosquitto_msg_store **stored, uint32_t message_expiry_interval, mosquitto_property *properties, dbid_t store_id, enum mosquitto_msg_origin origin);

@@ -708,7 +708,6 @@ struct mosquitto__subhier *sub__add_hier_entry(struct mosquitto__subhier *parent
 /* ext */
 int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub, int qos, uint32_t identifier, int options, struct mosquitto__subhier **root)
 {
-	WaitForSingleObject(db->sub_mutex, INFINITE);
 	int rc = 0;
 	struct mosquitto__subhier *subhier;
 	struct sub__token *tokens = NULL, *t;
@@ -718,12 +717,17 @@ int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub
 	assert(*root);
 	assert(sub);
 
-	if(sub__topic_tokenise(sub, &tokens)) return 1;
+	vayo_mutex_lock(&db->sub_mutex);
+	if(sub__topic_tokenise(sub, &tokens))
+	{
+		vayo_mutex_unlock(&db->sub_mutex);
+		return 1;
+	} 
 
 	if(!strcmp(tokens->topic, "$share")){
 		if(!tokens->next || !tokens->next->next){
 			sub__topic_tokens_free(tokens);
-			ReleaseMutex(db->sub_mutex);
+			vayo_mutex_unlock(&db->sub_mutex);
 			return MOSQ_ERR_PROTOCOL;
 		}
 		t = tokens->next;
@@ -737,13 +741,12 @@ int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub
 		if(!tokens->topic){
 			tokens->topic = sharename;
 			sub__topic_tokens_free(tokens);
-			ReleaseMutex(db->sub_mutex);
+			vayo_mutex_unlock(&db->sub_mutex);
 			return MOSQ_ERR_PROTOCOL;
 		}
 		tokens->topic_len = 0;
 	}
 
-	
 	HASH_FIND(hh, *root, tokens->topic, tokens->topic_len, subhier);
 		
 	if(!subhier){
@@ -751,19 +754,19 @@ int sub__add(struct mosquitto_db *db, struct mosquitto *context, const char *sub
 		if(!subhier){
 			sub__topic_tokens_free(tokens);
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
-			ReleaseMutex(db->sub_mutex);
+			vayo_mutex_unlock(&db->sub_mutex);
 			return MOSQ_ERR_NOMEM;
 		}
 	}
+
 	rc = sub__add_context(db, context, qos, identifier, options, subhier, tokens, sharename);
-		
 	sub__topic_tokens_free(tokens);
 
-	ReleaseMutex(db->sub_mutex);
+	vayo_mutex_unlock(&db->sub_mutex);
 	return rc;
 }
 
-/* ext */
+/* ext+ */
 int sub__remove(struct mosquitto_db *db, struct mosquitto *context, const char *sub, struct mosquitto__subhier *root, uint8_t *reason)
 {
 	int rc = 0;
@@ -774,11 +777,17 @@ int sub__remove(struct mosquitto_db *db, struct mosquitto *context, const char *
 	assert(root);
 	assert(sub);
 
-	if(sub__topic_tokenise(sub, &tokens)) return 1;
+	vayo_mutex_lock(&db->sub_mutex);
+	if(sub__topic_tokenise(sub, &tokens))
+	{
+		vayo_mutex_unlock(&db->sub_mutex);
+		return 1;
+	} 
 
 	if(!strcmp(tokens->topic, "$share")){
 		if(!tokens->next || !tokens->next->next){
 			sub__topic_tokens_free(tokens);
+			vayo_mutex_unlock(&db->sub_mutex);
 			return MOSQ_ERR_PROTOCOL;
 		}
 		t = tokens->next;
@@ -792,25 +801,24 @@ int sub__remove(struct mosquitto_db *db, struct mosquitto *context, const char *
 		if(!tokens->topic){
 			tokens->topic = sharename;
 			sub__topic_tokens_free(tokens);
+			vayo_mutex_unlock(&db->sub_mutex);
 			return MOSQ_ERR_PROTOCOL;
 		}
 		tokens->topic_len = 0;
 	}
 
-	WaitForSingleObject(db->sub_mutex, INFINITE);
 	HASH_FIND(hh, root, tokens->topic, tokens->topic_len, subhier);
 	if(subhier){
 		*reason = MQTT_RC_NO_SUBSCRIPTION_EXISTED;
 		rc = sub__remove_recurse(db, context, subhier, tokens, reason, sharename);
 	}
-
 	sub__topic_tokens_free(tokens);
-	ReleaseMutex(db->sub_mutex);
-	
+
+	vayo_mutex_unlock(&db->sub_mutex);
 	return rc;
 }
 
-/* ext */
+/* ext+ */
 int sub__messages_queue(struct mosquitto_db *db, const char *source_id, const char *topic, int qos, int retain, struct mosquitto_msg_store **stored)
 {
 	int rc = 0;
@@ -820,10 +828,13 @@ int sub__messages_queue(struct mosquitto_db *db, const char *source_id, const ch
 	assert(db);
 	assert(topic);
 
-	if(sub__topic_tokenise(topic, &tokens))	return 1;
-
-	WaitForSingleObject(db->sub_mutex, INFINITE);
-	
+	vayo_mutex_lock(&db->sub_mutex);
+	if(sub__topic_tokenise(topic, &tokens))
+	{
+		vayo_mutex_unlock(&db->sub_mutex);
+		return 1;
+	}	
+		
 	/* Protect this message until we have sent it to all
 	clients - this is required because websockets client calls
 	db__message_write(), which could remove the message if ref_count==0.
@@ -844,8 +855,8 @@ int sub__messages_queue(struct mosquitto_db *db, const char *source_id, const ch
 
 	/* Remove our reference and free if needed. */
 	db__msg_store_ref_dec(db, stored);
-
-	ReleaseMutex(db->sub_mutex);
+	vayo_mutex_unlock(&db->sub_mutex);
+		
 	return rc;
 }
 
@@ -928,11 +939,11 @@ static int sub__clean_session_shared(struct mosquitto_db *db, struct mosquitto *
  */
 int sub__clean_session(struct mosquitto_db *db, struct mosquitto *context)
 {
-	WaitForSingleObject(db->sub_mutex, INFINITE);
 	int i;
 	struct mosquitto__subleaf *leaf;
 	struct mosquitto__subhier *hier;
 
+	vayo_mutex_lock(&db->sub_mutex);
 	for(i=0; i<context->sub_count; i++){
 		if(context->subs[i] == NULL){
 			continue;
@@ -967,8 +978,8 @@ int sub__clean_session(struct mosquitto_db *db, struct mosquitto *context)
 	context->sub_count = 0;
 
 	int res = sub__clean_session_shared(db, context);
-	ReleaseMutex(db->sub_mutex);
-
+	vayo_mutex_unlock(&db->sub_mutex);
+	
 	return res;
 }
 
@@ -1069,6 +1080,7 @@ static int retain__process(struct mosquitto_db *db, struct mosquitto__subhier *b
 	return db__message_insert(db, context, mid, mosq_md_out, qos, true, retained, properties);
 }
 
+/* from sub__retain_queue */
 static int retain__search(struct mosquitto_db *db, struct mosquitto__subhier *subhier, struct sub__token *tokens, struct mosquitto *context, const char *sub, int sub_qos, uint32_t subscription_identifier, time_t now, int level)
 {
 	struct mosquitto__subhier *branch, *branch_tmp;
@@ -1138,9 +1150,13 @@ int sub__retain_queue(struct mosquitto_db *db, struct mosquitto *context, const 
 	assert(context);
 	assert(sub);
 
-	if(sub__topic_tokenise(sub, &tokens)){ return 1;}
+	vayo_mutex_lock(&db->sub_mutex);
+	if(sub__topic_tokenise(sub, &tokens))
+	{
+		vayo_mutex_unlock(&db->sub_mutex);
+		return 1;
+	}
 
-	WaitForSingleObject(db->sub_mutex, INFINITE);
 	HASH_FIND(hh, db->subs, tokens->topic, tokens->topic_len, subhier);
 		
 	if(subhier){
@@ -1154,8 +1170,8 @@ int sub__retain_queue(struct mosquitto_db *db, struct mosquitto *context, const 
 		mosquitto__free(tokens);
 		tokens = tail;
 	}
+	vayo_mutex_unlock(&db->sub_mutex);
 
-	ReleaseMutex(db->sub_mutex);
 	return MOSQ_ERR_SUCCESS;
 }
 

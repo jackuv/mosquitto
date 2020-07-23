@@ -55,6 +55,8 @@ set (MOSQ_SRCS
 	session_expiry.c
 	subs.c
 	sys_tree.c sys_tree.h
+	asprintf.c asprintf.h
+	vayo_threading.c vayo_threading.h
 	../lib/time_mosq.c
 	../lib/tls_mosq.c
 	../lib/util_mosq.c ../lib/util_topic.c ../lib/util_mosq.h
