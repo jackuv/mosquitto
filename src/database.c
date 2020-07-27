@@ -291,6 +291,7 @@ void db__msg_store_compact(struct mosquitto_db *db)
 
 /* + */
 static void db__message_remove(struct mosquitto_db *db, struct mosquitto_msg_data *msg_data, struct mosquitto_client_msg *item)
+
 {
 	if(!msg_data || !item){
 		return;
