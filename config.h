@@ -40,8 +40,8 @@
 #endif
 
 
-#define uthash_malloc(sz) mosquitto__malloc(sz)
-#define uthash_free(ptr,sz) mosquitto__free(ptr)
+#define uthash_malloc(sz) malloc(sz)
+#define uthash_free(ptr,sz) free(ptr)
 
 
 #ifdef WITH_TLS

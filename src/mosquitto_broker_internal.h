@@ -52,8 +52,8 @@ Contributors:
 #include "uthash.h"
 #include "vayo_threading.h"
 
-#define uhpa_malloc(size) mosquitto__malloc(size)
-#define uhpa_free(ptr) mosquitto__free(ptr)
+#define uhpa_malloc(size) malloc(size)
+#define uhpa_free(ptr) free(ptr)
 #include "uhpa.h"
 
 #ifndef __GNUC__

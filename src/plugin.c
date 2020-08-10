@@ -103,7 +103,7 @@ int mosquitto_set_username(struct mosquitto *client, const char *username)
 	if(!client) return MOSQ_ERR_INVAL;
 
 	if(username){
-		u_dup = mosquitto__strdup(username);
+		u_dup = strdup(username);
 		if(!u_dup) return MOSQ_ERR_NOMEM;
 	}else{
 		u_dup = NULL;
@@ -115,10 +115,10 @@ int mosquitto_set_username(struct mosquitto *client, const char *username)
 	rc = acl__find_acls(mosquitto__get_db(), client);
 	if(rc){
 		client->username = old;
-		mosquitto__free(u_dup);
+		free(u_dup);
 		return rc;
 	}else{
-		mosquitto__free(old);
+		free(old);
 		return MOSQ_ERR_SUCCESS;
 	}
 }

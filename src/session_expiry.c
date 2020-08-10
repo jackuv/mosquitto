@@ -53,7 +53,7 @@ int session_expiry__add(struct mosquitto_db *db, struct mosquitto *context)
 		}
 	}
 
-	item = mosquitto__calloc(1, sizeof(struct session_expiry_list));
+	item = calloc(1, sizeof(struct session_expiry_list));
 	if(!item) return MOSQ_ERR_NOMEM;
 
 	item->context = context;
@@ -84,7 +84,7 @@ void session_expiry__remove(struct mosquitto *context)
 {
 	if(context->expiry_list_item){
 		DL_DELETE(expiry_list, context->expiry_list_item);
-		mosquitto__free(context->expiry_list_item);
+		free(context->expiry_list_item);
 		context->expiry_list_item = NULL;
 	}
 }

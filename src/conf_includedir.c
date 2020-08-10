@@ -98,23 +98,23 @@ int config__get_dir_files(const char *include_dir, char ***files, int *file_coun
 		len = strlen(include_dir)+1+strlen(find_data.cFileName)+1;
 
 		l_file_count++;
-		files_tmp = mosquitto__realloc(l_files, l_file_count*sizeof(char *));
+		files_tmp = realloc(l_files, l_file_count*sizeof(char *));
 		if(!files_tmp){
 			for(i=0; i<l_file_count-1; i++){
-				mosquitto__free(l_files[i]);
+				free(l_files[i]);
 			}
-			mosquitto__free(l_files);
+			free(l_files);
 			FindClose(fh);
 			return MOSQ_ERR_NOMEM;
 		}
 		l_files = files_tmp;
 
-		l_files[l_file_count-1] = mosquitto__malloc(len+1);
+		l_files[l_file_count-1] = malloc(len+1);
 		if(!l_files[l_file_count-1]){
 			for(i=0; i<l_file_count-1; i++){
-				mosquitto__free(l_files[i]);
+				free(l_files[i]);
 			}
-			mosquitto__free(l_files);
+			free(l_files);
 			FindClose(fh);
 			return MOSQ_ERR_NOMEM;
 		}
@@ -159,23 +159,23 @@ int config__get_dir_files(const char *include_dir, char ***files, int *file_coun
 				len = strlen(include_dir)+1+strlen(de->d_name)+1;
 
 				l_file_count++;
-				files_tmp = mosquitto__realloc(l_files, l_file_count*sizeof(char *));
+				files_tmp = realloc(l_files, l_file_count*sizeof(char *));
 				if(!files_tmp){
 					for(i=0; i<l_file_count-1; i++){
-						mosquitto__free(l_files[i]);
+						free(l_files[i]);
 					}
-					mosquitto__free(l_files);
+					free(l_files);
 					closedir(dh);
 					return MOSQ_ERR_NOMEM;
 				}
 				l_files = files_tmp;
 
-				l_files[l_file_count-1] = mosquitto__malloc(len+1);
+				l_files[l_file_count-1] = malloc(len+1);
 				if(!l_files[l_file_count-1]){
 					for(i=0; i<l_file_count-1; i++){
-						mosquitto__free(l_files[i]);
+						free(l_files[i]);
 					}
-					mosquitto__free(l_files);
+					free(l_files);
 					closedir(dh);
 					return MOSQ_ERR_NOMEM;
 				}

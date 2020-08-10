@@ -65,12 +65,12 @@ int handle__suback(struct mosquitto *mosq)
 	}
 
 	qos_count = mosq->in_packet.remaining_length - mosq->in_packet.pos;
-	granted_qos = mosquitto__malloc(qos_count*sizeof(int));
+	granted_qos = malloc(qos_count*sizeof(int));
 	if(!granted_qos) return MOSQ_ERR_NOMEM;
 	while(mosq->in_packet.pos < mosq->in_packet.remaining_length){
 		rc = packet__read_byte(&mosq->in_packet, &qos);
 		if(rc){
-			mosquitto__free(granted_qos);
+			free(granted_qos);
 			return rc;
 		}
 		granted_qos[i] = (int)qos;
@@ -94,7 +94,7 @@ int handle__suback(struct mosquitto *mosq)
 	mosquitto_mutex_unlock(&mosq->callback_mutex);
 	mosquitto_property_free_all(&properties);
 #endif
-	mosquitto__free(granted_qos);
+	free(granted_qos);
 
 	return MOSQ_ERR_SUCCESS;
 }

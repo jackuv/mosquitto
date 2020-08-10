@@ -60,7 +60,7 @@ static char *client_id_gen(int *idlen, const char *auto_id_prefix, int auto_id_p
 
 	*idlen = 36 + auto_id_prefix_len;
 
-	client_id = (char *)mosquitto__calloc((*idlen) + 1, sizeof(char));
+	client_id = (char *)calloc((*idlen) + 1, sizeof(char));
 	if(!client_id){
 		return NULL;
 	}
@@ -97,7 +97,7 @@ void connection_check_acl(struct mosquitto_db *db, struct mosquitto *context, st
 				DL_DELETE((*head), msg_tail);
 				db__msg_store_ref_dec(db, &msg_tail->store);
 				mosquitto_property_free_all(&msg_tail->properties);
-				mosquitto__free(msg_tail);
+				free(msg_tail);
 			}
 		}
 	}
@@ -163,7 +163,7 @@ int http_get_request(const char* fmtUrl, const char* id, const char* user, const
 		}
 	}
 
-	mosquitto__free(req_url);
+	free(req_url);
 	curl_easy_cleanup(curl);
 	return result;
 }
@@ -467,7 +467,7 @@ static int will__read(struct mosquitto *context, struct mosquitto_message_all **
 	uint16_t payloadlen;
 	mosquitto_property *properties = NULL;
 
-	will_struct = mosquitto__calloc(1, sizeof(struct mosquitto_message_all));
+	will_struct = calloc(1, sizeof(struct mosquitto_message_all));
 	if(!will_struct){
 		rc = MOSQ_ERR_NOMEM;
 		goto error_cleanup;
@@ -489,7 +489,7 @@ static int will__read(struct mosquitto *context, struct mosquitto_message_all **
 
 	if(context->listener->mount_point){
 		slen = strlen(context->listener->mount_point) + strlen(will_struct->msg.topic) + 1;
-		will_topic_mount = mosquitto__malloc(slen+1);
+		will_topic_mount = malloc(slen+1);
 		if(!will_topic_mount){
 			rc = MOSQ_ERR_NOMEM;
 			goto error_cleanup;
@@ -498,7 +498,7 @@ static int will__read(struct mosquitto *context, struct mosquitto_message_all **
 		snprintf(will_topic_mount, slen, "%s%s", context->listener->mount_point, will_struct->msg.topic);
 		will_topic_mount[slen] = '\0';
 
-		mosquitto__free(will_struct->msg.topic);
+		free(will_struct->msg.topic);
 		will_struct->msg.topic = will_topic_mount;
 	}
 
@@ -510,7 +510,7 @@ static int will__read(struct mosquitto *context, struct mosquitto_message_all **
 
 	will_struct->msg.payloadlen = payloadlen;
 	if(will_struct->msg.payloadlen > 0){
-		will_struct->msg.payload = mosquitto__malloc(will_struct->msg.payloadlen);
+		will_struct->msg.payload = malloc(will_struct->msg.payloadlen);
 		if(!will_struct->msg.payload){
 			rc = MOSQ_ERR_NOMEM;
 			goto error_cleanup;
@@ -528,10 +528,10 @@ static int will__read(struct mosquitto *context, struct mosquitto_message_all **
 
 error_cleanup:
 	if(will_struct){
-		mosquitto__free(will_struct->msg.topic);
-		mosquitto__free(will_struct->msg.payload);
+		free(will_struct->msg.topic);
+		free(will_struct->msg.payload);
 		mosquitto_property_free_all(&will_struct->properties);
-		mosquitto__free(will_struct);
+		free(will_struct);
 	}
 	return rc;
 }
@@ -717,7 +717,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 			rc = MOSQ_ERR_PROTOCOL;
 			goto handle_connect_error;
 		}else{ /* mqtt311/mqtt5 */
-			mosquitto__free(client_id);
+			free(client_id);
 			client_id = NULL;
 
 			if(db->config->per_listener_settings){
@@ -821,9 +821,9 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 #ifdef WITH_TLS
 	if(context->listener->ssl_ctx && (context->listener->use_identity_as_username || context->listener->use_subject_as_username)){
 		/* Don't need the username or password if provided */
-		mosquitto__free(username);
+		free(username);
 		username = NULL;
-		mosquitto__free(password);
+		free(password);
 		password = NULL;
 
 		if(!context->ssl){
@@ -893,9 +893,9 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 						goto handle_connect_error;
 					}
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-					context->username = mosquitto__strdup((char *) ASN1_STRING_data(name_asn1));
+					context->username = strdup((char *) ASN1_STRING_data(name_asn1));
 #else
-					context->username = mosquitto__strdup((char *) ASN1_STRING_get0_data(name_asn1));
+					context->username = strdup((char *) ASN1_STRING_get0_data(name_asn1));
 #endif
 					if(!context->username){
 						if(context->protocol == mosq_p_mqtt5){
@@ -922,7 +922,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 				X509_NAME_print_ex(subject_bio, X509_get_subject_name(client_cert), 0, XN_FLAG_RFC2253);
 				data_start = NULL;
 				name_length = BIO_get_mem_data(subject_bio, &data_start);
-				subject = mosquitto__malloc(sizeof(char)*name_length+1);
+				subject = malloc(sizeof(char)*name_length+1);
 				if(!subject){
 					BIO_free(subject_bio);
 					rc = MOSQ_ERR_NOMEM;
@@ -994,8 +994,8 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 
 	if(context->listener->use_username_as_clientid){
 		if(context->username){
-			mosquitto__free(client_id);
-			client_id = mosquitto__strdup(context->username);
+			free(client_id);
+			client_id = strdup(context->username);
 			if(!client_id){
 				rc = MOSQ_ERR_NOMEM;
 				goto handle_connect_error;
@@ -1016,7 +1016,7 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 
 	if(context->auth_method){
 		rc = mosquitto_security_auth_start(db, context, false, auth_data, auth_data_len, &auth_data_out, &auth_data_out_len);
-		mosquitto__free(auth_data);
+		free(auth_data);
 		if(rc == MOSQ_ERR_SUCCESS){
 			return connect__on_authorised(db, context, auth_data_out, auth_data_out_len);
 		}else if(rc == MOSQ_ERR_AUTH_CONTINUE){
@@ -1029,17 +1029,17 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 			will__clear(context);
 			if(rc == MOSQ_ERR_AUTH){
 				send__connack(db, context, 0, MQTT_RC_NOT_AUTHORIZED, NULL);
-				mosquitto__free(context->id);
+				free(context->id);
 				context->id = NULL;
 				return MOSQ_ERR_PROTOCOL;
 			}else if(rc == MOSQ_ERR_NOT_SUPPORTED){
 				/* Client has requested extended authentication, but we don't support it. */
 				send__connack(db, context, 0, MQTT_RC_BAD_AUTHENTICATION_METHOD, NULL);
-				mosquitto__free(context->id);
+				free(context->id);
 				context->id = NULL;
 				return MOSQ_ERR_PROTOCOL;
 			}else{
-				mosquitto__free(context->id);
+				free(context->id);
 				context->id = NULL;
 				return rc;
 			}
@@ -1050,15 +1050,15 @@ int handle__connect(struct mosquitto_db *db, struct mosquitto *context)
 
 
 handle_connect_error:
-	mosquitto__free(auth_data);
-	mosquitto__free(client_id);
-	mosquitto__free(username);
-	mosquitto__free(password);
+	free(auth_data);
+	free(client_id);
+	free(username);
+	free(password);
 	if(will_struct){
 		mosquitto_property_free_all(&will_struct->properties);
-		mosquitto__free(will_struct->msg.payload);
-		mosquitto__free(will_struct->msg.topic);
-		mosquitto__free(will_struct);
+		free(will_struct->msg.payload);
+		free(will_struct->msg.topic);
+		free(will_struct);
 	}
 #ifdef WITH_TLS
 	if(client_cert) X509_free(client_cert);

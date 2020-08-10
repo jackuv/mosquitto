@@ -53,7 +53,7 @@ int send__disconnect(struct mosquitto *mosq, uint8_t reason_code, const mosquitt
 	log__printf(mosq, MOSQ_LOG_DEBUG, "Client %s sending DISCONNECT", mosq->id);
 #endif
 	assert(mosq);
-	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
+	packet = calloc(1, sizeof(struct mosquitto__packet));
 	if(!packet) return MOSQ_ERR_NOMEM;
 
 	packet->command = CMD_DISCONNECT;
@@ -70,7 +70,7 @@ int send__disconnect(struct mosquitto *mosq, uint8_t reason_code, const mosquitt
 
 	rc = packet__alloc(packet);
 	if(rc){
-		mosquitto__free(packet);
+		free(packet);
 		return rc;
 	}
 	if(mosq->protocol == mosq_p_mqtt5 && (reason_code != 0 || properties)){

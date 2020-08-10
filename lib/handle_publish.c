@@ -49,7 +49,7 @@ int handle__publish(struct mosquitto *mosq)
 		return MOSQ_ERR_PROTOCOL;
 	}
 
-	message = mosquitto__calloc(1, sizeof(struct mosquitto_message_all));
+	message = calloc(1, sizeof(struct mosquitto_message_all));
 	if(!message) return MOSQ_ERR_NOMEM;
 
 	header = mosq->in_packet.command;
@@ -96,7 +96,7 @@ int handle__publish(struct mosquitto *mosq)
 
 	message->msg.payloadlen = mosq->in_packet.remaining_length - mosq->in_packet.pos;
 	if(message->msg.payloadlen){
-		message->msg.payload = mosquitto__calloc(message->msg.payloadlen+1, sizeof(uint8_t));
+		message->msg.payload = calloc(message->msg.payloadlen+1, sizeof(uint8_t));
 		if(!message->msg.payload){
 			message__cleanup(&message);
 			mosquitto_property_free_all(&properties);

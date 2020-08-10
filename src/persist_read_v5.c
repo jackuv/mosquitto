@@ -105,13 +105,13 @@ int persist__chunk_client_msg_read_v5(FILE *db_fptr, struct P_client_msg *chunk,
 	if(length > 0){
 		memset(&prop_packet, 0, sizeof(struct mosquitto__packet));
 		prop_packet.remaining_length = length;
-		prop_packet.payload = mosquitto__malloc(length);
+		prop_packet.payload = malloc(length);
 		if(!prop_packet.payload){
 			return MOSQ_ERR_NOMEM;
 		}
 		read_e(db_fptr, prop_packet.payload, length);
 		rc = property__read_all(CMD_PUBLISH, &prop_packet, &properties);
-		mosquitto__free(prop_packet.payload);
+		free(prop_packet.payload);
 		if(rc){
 			return rc;
 		}
@@ -155,15 +155,15 @@ int persist__chunk_msg_store_read_v5(FILE *db_fptr, struct P_msg_store *chunk, u
 	if(chunk->F.source_username_len){
 		rc = persist__read_string_len(db_fptr, &chunk->source.username, chunk->F.source_username_len);
 		if(rc){
-			mosquitto__free(chunk->source.id);
+			free(chunk->source.id);
 			chunk->source.id = NULL;
 			return rc;
 		}
 	}
 	rc = persist__read_string_len(db_fptr, &chunk->topic, chunk->F.topic_len);
 	if(rc){
-		mosquitto__free(chunk->source.id);
-		mosquitto__free(chunk->source.username);
+		free(chunk->source.id);
+		free(chunk->source.username);
 		chunk->source.id = NULL;
 		chunk->source.username = NULL;
 		return rc;
@@ -171,9 +171,9 @@ int persist__chunk_msg_store_read_v5(FILE *db_fptr, struct P_msg_store *chunk, u
 
 	if(chunk->F.payloadlen > 0){
 		if(UHPA_ALLOC(chunk->payload, chunk->F.payloadlen) == 0){
-			mosquitto__free(chunk->source.id);
-			mosquitto__free(chunk->source.username);
-			mosquitto__free(chunk->topic);
+			free(chunk->source.id);
+			free(chunk->source.username);
+			free(chunk->topic);
 			chunk->source.id = NULL;
 			chunk->source.username = NULL;
 			chunk->topic = NULL;
@@ -185,20 +185,20 @@ int persist__chunk_msg_store_read_v5(FILE *db_fptr, struct P_msg_store *chunk, u
 
 	if(length > 0){
 		prop_packet.remaining_length = length;
-		prop_packet.payload = mosquitto__malloc(length);
+		prop_packet.payload = malloc(length);
 		if(!prop_packet.payload){
-			mosquitto__free(chunk->source.id);
-			mosquitto__free(chunk->source.username);
-			mosquitto__free(chunk->topic);
+			free(chunk->source.id);
+			free(chunk->source.username);
+			free(chunk->topic);
 			return MOSQ_ERR_NOMEM;
 		}
 		read_e(db_fptr, prop_packet.payload, length);
 		rc = property__read_all(CMD_PUBLISH, &prop_packet, &properties);
-		mosquitto__free(prop_packet.payload);
+		free(prop_packet.payload);
 		if(rc){
-			mosquitto__free(chunk->source.id);
-			mosquitto__free(chunk->source.username);
-			mosquitto__free(chunk->topic);
+			free(chunk->source.id);
+			free(chunk->source.username);
+			free(chunk->topic);
 			return rc;
 		}
 	}
@@ -207,10 +207,10 @@ int persist__chunk_msg_store_read_v5(FILE *db_fptr, struct P_msg_store *chunk, u
 	return MOSQ_ERR_SUCCESS;
 error:
 	log__printf(NULL, MOSQ_LOG_ERR, "Error: %s.", strerror(errno));
-	mosquitto__free(chunk->source.id);
-	mosquitto__free(chunk->source.username);
-	mosquitto__free(chunk->topic);
-	mosquitto__free(prop_packet.payload);
+	free(chunk->source.id);
+	free(chunk->source.username);
+	free(chunk->topic);
+	free(prop_packet.payload);
 	return 1;
 }
 
@@ -240,7 +240,7 @@ int persist__chunk_sub_read_v5(FILE *db_fptr, struct P_sub *chunk)
 	}
 	rc = persist__read_string_len(db_fptr, &chunk->topic, chunk->F.topic_len);
 	if(rc){
-		mosquitto__free(chunk->client_id);
+		free(chunk->client_id);
 		chunk->client_id = NULL;
 		return rc;
 	}

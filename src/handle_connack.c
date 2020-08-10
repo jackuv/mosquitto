@@ -67,7 +67,7 @@ int handle__connack(struct mosquitto_db *db, struct mosquitto *context)
 						db__messages_easy_queue(db, context, context->bridge->notification_topic, 1, 1, &notification_payload, 1, 0, NULL);
 					}else{
 						notification_topic_len = strlen(context->bridge->remote_clientid)+strlen("$SYS/broker/connection//state");
-						notification_topic = mosquitto__malloc(sizeof(char)*(notification_topic_len+1));
+						notification_topic = malloc(sizeof(char)*(notification_topic_len+1));
 						if(!notification_topic) return MOSQ_ERR_NOMEM;
 
 						snprintf(notification_topic, notification_topic_len+1, "$SYS/broker/connection/%s/state", context->bridge->remote_clientid);
@@ -76,12 +76,12 @@ int handle__connack(struct mosquitto_db *db, struct mosquitto *context)
 							if(send__real_publish(context, mosquitto__mid_generate(context),
 									notification_topic, 1, &notification_payload, 1, true, 0, NULL, NULL, 0)){
 
-								mosquitto__free(notification_topic);
+								free(notification_topic);
 								return 1;
 							}
 						}
 						db__messages_easy_queue(db, context, notification_topic, 1, 1, &notification_payload, 1, 0, NULL);
-						mosquitto__free(notification_topic);
+						free(notification_topic);
 					}
 				}
 				for(i=0; i<context->bridge->topic_count; i++){

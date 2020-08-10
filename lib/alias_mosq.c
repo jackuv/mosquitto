@@ -27,8 +27,8 @@ int alias__add(struct mosquitto *mosq, const char *topic, int alias)
 
 	for(i=0; i<mosq->alias_count; i++){
 		if(mosq->aliases[i].alias == alias){
-			mosquitto__free(mosq->aliases[i].topic);
-			mosq->aliases[i].topic = mosquitto__strdup(topic);
+			free(mosq->aliases[i].topic);
+			mosq->aliases[i].topic = strdup(topic);
 			if(mosq->aliases[i].topic){
 				return MOSQ_ERR_SUCCESS;
 			}else{
@@ -39,12 +39,12 @@ int alias__add(struct mosquitto *mosq, const char *topic, int alias)
 	}
 
 	/* New alias */
-	aliases = mosquitto__realloc(mosq->aliases, sizeof(struct mosquitto__alias)*(mosq->alias_count+1));
+	aliases = realloc(mosq->aliases, sizeof(struct mosquitto__alias)*(mosq->alias_count+1));
 	if(!aliases) return MOSQ_ERR_NOMEM;
 
 	mosq->aliases = aliases;
 	mosq->aliases[mosq->alias_count].alias = alias;
-	mosq->aliases[mosq->alias_count].topic = mosquitto__strdup(topic);
+	mosq->aliases[mosq->alias_count].topic = strdup(topic);
 	if(!mosq->aliases[mosq->alias_count].topic){
 		return MOSQ_ERR_NOMEM;
 	}
@@ -60,7 +60,7 @@ int alias__find(struct mosquitto *mosq, char **topic, int alias)
 
 	for(i=0; i<mosq->alias_count; i++){
 		if(mosq->aliases[i].alias == alias){
-			*topic = mosquitto__strdup(mosq->aliases[i].topic);
+			*topic = strdup(mosq->aliases[i].topic);
 			if(*topic){
 				return MOSQ_ERR_SUCCESS;
 			}else{
@@ -77,9 +77,9 @@ void alias__free_all(struct mosquitto *mosq)
 	int i;
 
 	for(i=0; i<mosq->alias_count; i++){
-		mosquitto__free(mosq->aliases[i].topic);
+		free(mosq->aliases[i].topic);
 	}
-	mosquitto__free(mosq->aliases);
+	free(mosq->aliases);
 	mosq->aliases = NULL;
 	mosq->alias_count = 0;
 }

@@ -104,7 +104,7 @@ int persist__chunk_client_msg_write_v5(FILE *db_fptr, struct P_client_msg *chunk
 		if(proplen > 0){
 			prop_packet.remaining_length = proplen;
 			prop_packet.packet_length = proplen;
-			prop_packet.payload = mosquitto__malloc(proplen);
+			prop_packet.payload = malloc(proplen);
 			if(!prop_packet.payload){
 				return MOSQ_ERR_NOMEM;
 			}
@@ -112,7 +112,7 @@ int persist__chunk_client_msg_write_v5(FILE *db_fptr, struct P_client_msg *chunk
 			if(rc) return rc;
 
 			write_e(db_fptr, prop_packet.payload, proplen);
-			mosquitto__free(prop_packet.payload);
+			free(prop_packet.payload);
 		}
 	}
 
@@ -168,7 +168,7 @@ int persist__chunk_message_store_write_v5(FILE *db_fptr, struct P_msg_store *chu
 		if(proplen > 0){
 			prop_packet.remaining_length = proplen;
 			prop_packet.packet_length = proplen;
-			prop_packet.payload = mosquitto__malloc(proplen);
+			prop_packet.payload = malloc(proplen);
 			if(!prop_packet.payload){
 				return MOSQ_ERR_NOMEM;
 			}
@@ -176,14 +176,14 @@ int persist__chunk_message_store_write_v5(FILE *db_fptr, struct P_msg_store *chu
 			if(rc) return rc;
 
 			write_e(db_fptr, prop_packet.payload, proplen);
-			mosquitto__free(prop_packet.payload);
+			free(prop_packet.payload);
 		}
 	}
 
 	return MOSQ_ERR_SUCCESS;
 error:
 	log__printf(NULL, MOSQ_LOG_ERR, "Error: %s.", strerror(errno));
-	mosquitto__free(prop_packet.payload);
+	free(prop_packet.payload);
 	return 1;
 }
 

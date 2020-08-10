@@ -35,7 +35,7 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock, int t
 	struct mosquitto *context;
 	char address[1024];
 
-	context = mosquitto__calloc(1, sizeof(struct mosquitto));
+	context = calloc(1, sizeof(struct mosquitto));
 	if(!context) return NULL;
 	
 	context->pollfd_index = -1;
@@ -66,11 +66,11 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock, int t
 	context->address = NULL;
 	if((int)sock >= 0){
 		if(!net__socket_get_address(sock, address, 1024)){
-			context->address = mosquitto__strdup(address);
+			context->address = strdup(address);
 		}
 		if(!context->address){
 			/* getpeername and inet_ntop failed and not a bridge */
-			mosquitto__free(context);
+			free(context);
 			return NULL;
 		}
 	}
@@ -97,7 +97,7 @@ struct mosquitto *context__init(struct mosquitto_db *db, mosq_sock_t sock, int t
 		context->forceToDelete = 0;
 		if(threadIndex == 0)
 		{
-			HASH_ADD(hh_sock0, db->contexts_by_sock0, sock, sizeof(context->sock), context);	
+			HASH_ADD(hh_sock0, db->contexts_by_sock0, sock, sizeof(context->sock), context);
 		}
 		else if(threadIndex == 1)
 		{
@@ -153,27 +153,27 @@ void context__cleanup(struct mosquitto_db *db, struct mosquitto *context, bool d
 				db->bridges[i] = NULL;
 			}
 		}
-		mosquitto__free(context->bridge->local_clientid);
+		free(context->bridge->local_clientid);
 		context->bridge->local_clientid = NULL;
 
-		mosquitto__free(context->bridge->local_username);
+		free(context->bridge->local_username);
 		context->bridge->local_username = NULL;
 
-		mosquitto__free(context->bridge->local_password);
+		free(context->bridge->local_password);
 		context->bridge->local_password = NULL;
 
 		if(context->bridge->remote_clientid != context->id){
-			mosquitto__free(context->bridge->remote_clientid);
+			free(context->bridge->remote_clientid);
 		}
 		context->bridge->remote_clientid = NULL;
 
 		if(context->bridge->remote_username != context->username){
-			mosquitto__free(context->bridge->remote_username);
+			free(context->bridge->remote_username);
 		}
 		context->bridge->remote_username = NULL;
 
 		if(context->bridge->remote_password != context->password){
-			mosquitto__free(context->bridge->remote_password);
+			free(context->bridge->remote_password);
 		}
 		context->bridge->remote_password = NULL;
 	}
@@ -181,13 +181,13 @@ void context__cleanup(struct mosquitto_db *db, struct mosquitto *context, bool d
 
 	alias__free_all(context);
 
-	mosquitto__free(context->auth_method);
+	free(context->auth_method);
 	context->auth_method = NULL;
 
-	mosquitto__free(context->username);
+	free(context->username);
 	context->username = NULL;
 
-	mosquitto__free(context->password);
+	free(context->password);
 	context->password = NULL;
 
 	net__socket_close(db, context);
@@ -196,27 +196,27 @@ void context__cleanup(struct mosquitto_db *db, struct mosquitto *context, bool d
 		db__messages_delete(db, context);
 	}
 
-	mosquitto__free(context->address);
+	free(context->address);
 	context->address = NULL;
 
 	context__send_will(db, context);
 
 	if(context->id){
 		context__remove_from_by_id(db, context);
-		mosquitto__free(context->id);
+		free(context->id);
 		context->id = NULL;
 	}
 	packet__cleanup(&(context->in_packet));
 	if(context->current_out_packet){
 		packet__cleanup(context->current_out_packet);
-		mosquitto__free(context->current_out_packet);
+		free(context->current_out_packet);
 		context->current_out_packet = NULL;
 	}
 	while(context->out_packet){
 		packet__cleanup(context->out_packet);
 		packet = context->out_packet;
 		context->out_packet = context->out_packet->next;
-		mosquitto__free(packet);
+		free(packet);
 	}
 	if(do_free || context->clean_start){
 		db__messages_delete(db, context);
@@ -224,12 +224,12 @@ void context__cleanup(struct mosquitto_db *db, struct mosquitto *context, bool d
 #if defined(WITH_BROKER) && defined(__GLIBC__) && defined(WITH_ADNS)
 	if(context->adns){
 		gai_cancel(context->adns);
-		mosquitto__free((struct addrinfo *)context->adns->ar_request);
-		mosquitto__free(context->adns);
+		free((struct addrinfo *)context->adns->ar_request);
+		free(context->adns);
 	}
 #endif
 	if(do_free){
-		mosquitto__free(context);
+		free(context);
 	}
 	
 }
@@ -303,7 +303,7 @@ void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context)
 
 	if(context->id){
 		context__remove_from_by_id(db, context);
-		mosquitto__free(context->id);
+		free(context->id);
 		context->id = NULL;
 	}
 

@@ -24,15 +24,15 @@ Contributors:
 #define REAL_WITH_MEMORY_TRACKING
 #endif
 
-void *mosquitto__calloc(size_t nmemb, size_t size);
-void mosquitto__free(void *mem);
-void *mosquitto__malloc(size_t size);
+void *mosquitto__callocA(size_t nmemb, size_t size);
+void mosquitto__freeA(void *mem);
+void *mosquitto__mallocA(size_t size);
 #ifdef REAL_WITH_MEMORY_TRACKING
 unsigned long mosquitto__memory_used(void);
 unsigned long mosquitto__max_memory_used(void);
 #endif
-void *mosquitto__realloc(void *ptr, size_t size);
-char *mosquitto__strdup(const char *s);
+void *mosquitto__reallocA(void *ptr, size_t size);
+char *mosquitto__strdupA(const char *s);
 
 #ifdef WITH_BROKER
 void memory__set_limit(size_t lim);

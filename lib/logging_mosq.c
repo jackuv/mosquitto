@@ -37,7 +37,7 @@ int log__printf(struct mosquitto *mosq, int priority, const char *fmt, ...)
 	mosquitto_mutex_lock(&mosq->log_callback_mutex);
 	if(mosq->on_log){
 		len = strlen(fmt) + 500;
-		s = mosquitto__malloc(len*sizeof(char));
+		s = malloc(len*sizeof(char));
 		if(!s){
 			mosquitto_mutex_unlock(&mosq->log_callback_mutex);
 			return MOSQ_ERR_NOMEM;
@@ -50,7 +50,7 @@ int log__printf(struct mosquitto *mosq, int priority, const char *fmt, ...)
 
 		mosq->on_log(mosq, mosq->userdata, priority, s);
 
-		mosquitto__free(s);
+		free(s);
 	}
 	mosquitto_mutex_unlock(&mosq->log_callback_mutex);
 

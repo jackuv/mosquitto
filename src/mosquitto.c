@@ -13,6 +13,10 @@ and the Eclipse Distribution License is available at
 Contributors:
    Roger Light - initial implementation and documentation.
 */
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+
 
 #include "config.h"
 
@@ -341,7 +345,7 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			listensock_count += config.listeners[i].sock_count;
-			listensock = mosquitto__realloc(listensock, sizeof(mosq_sock_t)*listensock_count);
+			listensock = realloc(listensock, sizeof(mosq_sock_t)*listensock_count);
 			if(!listensock){
 				db__close(&int_db);
 				if(config.pid_file){
@@ -417,7 +421,7 @@ int main(int argc, char *argv[])
 		if(int_db.config->listeners[i].ws_context){
 			libwebsocket_context_destroy(int_db.config->listeners[i].ws_context);
 		}
-		mosquitto__free(int_db.config->listeners[i].ws_protocol);
+		free(int_db.config->listeners[i].ws_protocol);
 	}
 #endif
 
@@ -570,7 +574,7 @@ int main(int argc, char *argv[])
 			context__cleanup(&int_db, int_db.bridges[i], true);
 		}
 	}
-	mosquitto__free(int_db.bridges);
+	free(int_db.bridges);
 #endif
 	for(i=0; i<MAX_THREADS; i++)
 		context__free_disused(&int_db, i);
@@ -586,7 +590,7 @@ int main(int argc, char *argv[])
 #endif
 		}
 	}
-	mosquitto__free(listensock);
+	free(listensock);
 
 	mosquitto_security_module_cleanup(&int_db);
 
@@ -605,6 +609,11 @@ int main(int argc, char *argv[])
 	config__cleanup(int_db.config);
 	net__broker_cleanup();
 
+	char *p = malloc(sizeof(int));
+
+	_CrtDumpMemoryLeaks();
+
+	
 	return rc;
 }
 
@@ -617,12 +626,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	char *saveptr = NULL;
 	int rc;
 
-	argv = mosquitto__malloc(sizeof(char *)*1);
+	argv = malloc(sizeof(char *)*1);
 	argv[0] = "mosquitto";
 	token = strtok_r(lpCmdLine, " ", &saveptr);
 	while(token){
 		argc++;
-		argv = mosquitto__realloc(argv, sizeof(char *)*argc);
+		argv = realloc(argv, sizeof(char *)*argc);
 		if(!argv){
 			fprintf(stderr, "Error: Out of memory.\n");
 			return MOSQ_ERR_NOMEM;
@@ -631,7 +640,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		token = strtok_r(NULL, " ", &saveptr);
 	}
 	rc = main(argc, argv);
-	mosquitto__free(argv);
+	free(argv);
 	return rc;
 }
 #endif

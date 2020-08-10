@@ -169,7 +169,7 @@ static void easy_address(int sock, struct mosquitto *mosq)
 	char address[1024];
 
 	if(!net__socket_get_address(sock, address, 1024)){
-		mosq->address = mosquitto__strdup(address);
+		mosq->address = strdup(address);
 	}
 }
 
@@ -205,7 +205,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				p = libwebsockets_get_protocol(wsi);
 				mosq->listener = p->user;
 				if(!mosq->listener){
-					mosquitto__free(mosq);
+					free(mosq);
 					return -1;
 				}
 #if !defined(LWS_LIBRARY_VERSION_NUMBER)
@@ -227,7 +227,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 			easy_address(libwebsocket_get_socket_fd(wsi), mosq);
 			if(!mosq->address){
 				/* getpeername and inet_ntop failed and not a bridge */
-				mosquitto__free(mosq);
+				free(mosq);
 				u->mosq = NULL;
 				return -1;
 			}
@@ -235,8 +235,8 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				if(db->config->connection_messages == true){
 					log__printf(NULL, MOSQ_LOG_NOTICE, "Client connection from %s denied: max_connections exceeded.", mosq->address);
 				}
-				mosquitto__free(mosq->address);
-				mosquitto__free(mosq);
+				free(mosq->address);
+				free(mosq);
 				u->mosq = NULL;
 				return -1;
 			}
@@ -400,7 +400,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 				}
 
 				packet__cleanup(packet);
-				mosquitto__free(packet);
+				free(packet);
 
 				mosq->next_msg_out = mosquitto_time() + mosq->keepalive;
 			}
@@ -451,7 +451,7 @@ static int callback_mqtt(struct libwebsocket_context *context,
 					mosq->in_packet.remaining_count *= -1;
 
 					if(mosq->in_packet.remaining_length > 0){
-						mosq->in_packet.payload = mosquitto__malloc(mosq->in_packet.remaining_length*sizeof(uint8_t));
+						mosq->in_packet.payload = malloc(mosq->in_packet.remaining_length*sizeof(uint8_t));
 						if(!mosq->in_packet.payload){
 							return -1;
 						}
@@ -524,7 +524,7 @@ static char *http__canonical_filename(
 	}else{
 		slen = strlen(http_dir) + inlen + 2;
 	}
-	filename = mosquitto__malloc(slen);
+	filename = malloc(slen);
 	if(!filename){
 		libwebsockets_return_http_status(context, wsi, HTTP_STATUS_INTERNAL_SERVER_ERROR, NULL);
 		return NULL;
@@ -539,14 +539,14 @@ static char *http__canonical_filename(
 	/* Get canonical path and check it is within our http_dir */
 #ifdef WIN32
 	filename_canonical = _fullpath(NULL, filename, 0);
-	mosquitto__free(filename);
+	free(filename);
 	if(!filename_canonical){
 		libwebsockets_return_http_status(context, wsi, HTTP_STATUS_INTERNAL_SERVER_ERROR, NULL);
 		return NULL;
 	}
 #else
 	filename_canonical = realpath(filename, NULL);
-	mosquitto__free(filename);
+	free(filename);
 	if(!filename_canonical){
 		if(errno == EACCES){
 			libwebsockets_return_http_status(context, wsi, HTTP_STATUS_FORBIDDEN, NULL);
@@ -791,7 +791,7 @@ struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *li
 	/* Count valid protocols */
 	for(protocol_count=0; protocols[protocol_count].name; protocol_count++);
 
-	p = mosquitto__calloc(protocol_count+1, sizeof(struct libwebsocket_protocols));
+	p = calloc(protocol_count+1, sizeof(struct libwebsocket_protocols));
 	if(!p){
 		log__printf(NULL, MOSQ_LOG_ERR, "Out of memory.");
 		return NULL;
@@ -830,9 +830,9 @@ struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *li
     info.max_http_header_data = conf->websockets_headers_size;
 #endif
 
-	user = mosquitto__calloc(1, sizeof(struct libws_mqtt_hack));
+	user = calloc(1, sizeof(struct libws_mqtt_hack));
 	if(!user){
-		mosquitto__free(p);
+		free(p);
 		log__printf(NULL, MOSQ_LOG_ERR, "Out of memory.");
 		return NULL;
 	}
@@ -844,8 +844,8 @@ struct libwebsocket_context *mosq_websockets_init(struct mosquitto__listener *li
 		user->http_dir = realpath(listener->http_dir, NULL);
 #endif
 		if(!user->http_dir){
-			mosquitto__free(user);
-			mosquitto__free(p);
+			free(user);
+			free(p);
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to open http dir \"%s\".", listener->http_dir);
 			return NULL;
 		}

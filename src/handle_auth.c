@@ -78,12 +78,12 @@ int handle__auth(struct mosquitto_db *db, struct mosquitto *context)
 
 		if(!auth_method || strcmp(auth_method, context->auth_method)){
 			/* No method, or non-matching method */
-			mosquitto__free(auth_method);
+			free(auth_method);
 			mosquitto_property_free_all(&properties);
 			send__disconnect(context, MQTT_RC_PROTOCOL_ERROR, NULL);
 			return MOSQ_ERR_PROTOCOL;
 		}
-		mosquitto__free(auth_method);
+		free(auth_method);
 
 		mosquitto_property_read_binary(properties, MQTT_PROP_AUTHENTICATION_DATA, &auth_data, &auth_data_len, false);
 
@@ -103,7 +103,7 @@ int handle__auth(struct mosquitto_db *db, struct mosquitto *context)
 		}
 		rc = mosquitto_security_auth_continue(db, context, auth_data, auth_data_len, &auth_data_out, &auth_data_out_len);
 	}
-	mosquitto__free(auth_data);
+	free(auth_data);
 	if(rc == MOSQ_ERR_SUCCESS){
 		if(context->state == mosq_cs_authenticating){
 			return connect__on_authorised(db, context, auth_data_out, auth_data_out_len);
@@ -126,7 +126,7 @@ int handle__auth(struct mosquitto_db *db, struct mosquitto *context)
 		if(rc == MOSQ_ERR_AUTH){
 			send__connack(db, context, 0, MQTT_RC_NOT_AUTHORIZED, NULL);
 			if(context->state == mosq_cs_authenticating){
-				mosquitto__free(context->id);
+				free(context->id);
 				context->id = NULL;
 			}
 			return MOSQ_ERR_PROTOCOL;
@@ -134,13 +134,13 @@ int handle__auth(struct mosquitto_db *db, struct mosquitto *context)
 			/* Client has requested extended authentication, but we don't support it. */
 			send__connack(db, context, 0, MQTT_RC_BAD_AUTHENTICATION_METHOD, NULL);
 			if(context->state == mosq_cs_authenticating){
-				mosquitto__free(context->id);
+				free(context->id);
 				context->id = NULL;
 			}
 			return MOSQ_ERR_PROTOCOL;
 		}else{
 			if(context->state == mosq_cs_authenticating){
-				mosquitto__free(context->id);
+				free(context->id);
 				context->id = NULL;
 			}
 			return rc;

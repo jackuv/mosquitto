@@ -46,7 +46,7 @@ int send__unsubscribe(struct mosquitto *mosq, int *mid, int topic_count, char *c
 	assert(mosq);
 	assert(topic);
 
-	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
+	packet = calloc(1, sizeof(struct mosquitto__packet));
 	if(!packet) return MOSQ_ERR_NOMEM;
 
 	packetlen = 2;
@@ -64,7 +64,7 @@ int send__unsubscribe(struct mosquitto *mosq, int *mid, int topic_count, char *c
 	packet->remaining_length = packetlen;
 	rc = packet__alloc(packet);
 	if(rc){
-		mosquitto__free(packet);
+		free(packet);
 		return rc;
 	}
 

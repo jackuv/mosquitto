@@ -32,7 +32,7 @@ int send__unsuback(struct mosquitto *mosq, uint16_t mid, int reason_code_count, 
 	int proplen, varbytes;
 
 	assert(mosq);
-	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
+	packet = calloc(1, sizeof(struct mosquitto__packet));
 	if(!packet) return MOSQ_ERR_NOMEM;
 
 	packet->command = CMD_UNSUBACK;
@@ -46,7 +46,7 @@ int send__unsuback(struct mosquitto *mosq, uint16_t mid, int reason_code_count, 
 
 	rc = packet__alloc(packet);
 	if(rc){
-		mosquitto__free(packet);
+		free(packet);
 		return rc;
 	}
 

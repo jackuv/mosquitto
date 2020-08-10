@@ -67,11 +67,11 @@ int send__connack(struct mosquitto_db *db, struct mosquitto *context, int ack, i
 
 	if(packet__check_oversize(context, remaining_length)){
 		mosquitto_property_free_all(&connack_props);
-		mosquitto__free(packet);
+		free(packet);
 		return MOSQ_ERR_OVERSIZE_PACKET;
 	}
 
-	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
+	packet = calloc(1, sizeof(struct mosquitto__packet));
 	if(!packet) return MOSQ_ERR_NOMEM;
 
 	packet->command = CMD_CONNACK;
@@ -80,7 +80,7 @@ int send__connack(struct mosquitto_db *db, struct mosquitto *context, int ack, i
 	rc = packet__alloc(packet);
 	if(rc){
 		mosquitto_property_free_all(&connack_props);
-		mosquitto__free(packet);
+		free(packet);
 		return rc;
 	}
 	packet__write_byte(packet, ack);

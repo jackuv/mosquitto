@@ -110,7 +110,7 @@ struct mosquitto *mosquitto_new(const char *id, bool clean_start, void *userdata
 	signal(SIGPIPE, SIG_IGN);
 #endif
 
-	mosq = (struct mosquitto *)mosquitto__calloc(1, sizeof(struct mosquitto));
+	mosq = (struct mosquitto *)calloc(1, sizeof(struct mosquitto));
 	if(mosq){
 		mosq->sock = INVALID_SOCKET;
 		if(net__socketpair(&mosq->sockpairR, &mosq->sockpairW)){
@@ -167,7 +167,7 @@ int mosquitto_reinitialise(struct mosquitto *mosq, const char *id, bool clean_st
 		if(mosquitto_validate_utf8(id, strlen(id))){
 			return MOSQ_ERR_MALFORMED_UTF8;
 		}
-		mosq->id = mosquitto__strdup(id);
+		mosq->id = strdup(id);
 	}
 	mosq->in_packet.payload = NULL;
 	packet__cleanup(&mosq->in_packet);
@@ -264,34 +264,34 @@ void mosquitto__destroy(struct mosquitto *mosq)
 	if(mosq->ssl_ctx){
 		SSL_CTX_free(mosq->ssl_ctx);
 	}
-	mosquitto__free(mosq->tls_cafile);
-	mosquitto__free(mosq->tls_capath);
-	mosquitto__free(mosq->tls_certfile);
-	mosquitto__free(mosq->tls_keyfile);
+	free(mosq->tls_cafile);
+	free(mosq->tls_capath);
+	free(mosq->tls_certfile);
+	free(mosq->tls_keyfile);
 	if(mosq->tls_pw_callback) mosq->tls_pw_callback = NULL;
-	mosquitto__free(mosq->tls_version);
-	mosquitto__free(mosq->tls_ciphers);
-	mosquitto__free(mosq->tls_psk);
-	mosquitto__free(mosq->tls_psk_identity);
-	mosquitto__free(mosq->tls_alpn);
+	free(mosq->tls_version);
+	free(mosq->tls_ciphers);
+	free(mosq->tls_psk);
+	free(mosq->tls_psk_identity);
+	free(mosq->tls_alpn);
 #endif
 
-	mosquitto__free(mosq->address);
+	free(mosq->address);
 	mosq->address = NULL;
 
-	mosquitto__free(mosq->id);
+	free(mosq->id);
 	mosq->id = NULL;
 
-	mosquitto__free(mosq->username);
+	free(mosq->username);
 	mosq->username = NULL;
 
-	mosquitto__free(mosq->password);
+	free(mosq->password);
 	mosq->password = NULL;
 
-	mosquitto__free(mosq->host);
+	free(mosq->host);
 	mosq->host = NULL;
 
-	mosquitto__free(mosq->bind_address);
+	free(mosq->bind_address);
 	mosq->bind_address = NULL;
 
 	/* Out packet cleanup */
@@ -308,7 +308,7 @@ void mosquitto__destroy(struct mosquitto *mosq)
 		}
 
 		packet__cleanup(packet);
-		mosquitto__free(packet);
+		free(packet);
 	}
 
 	packet__cleanup(&mosq->in_packet);
@@ -327,7 +327,7 @@ void mosquitto_destroy(struct mosquitto *mosq)
 	if(!mosq) return;
 
 	mosquitto__destroy(mosq);
-	mosquitto__free(mosq);
+	free(mosq);
 }
 
 int mosquitto_socket(struct mosquitto *mosq)
@@ -590,7 +590,7 @@ int mosquitto_sub_topic_tokenise(const char *subtopic, char ***topics, int *coun
 		}
 	}
 
-	(*topics) = mosquitto__calloc(hier_count, sizeof(char *));
+	(*topics) = calloc(hier_count, sizeof(char *));
 	if(!(*topics)) return MOSQ_ERR_NOMEM;
 
 	start = 0;
@@ -601,12 +601,12 @@ int mosquitto_sub_topic_tokenise(const char *subtopic, char ***topics, int *coun
 			stop = i;
 			if(start != stop){
 				tlen = stop-start + 1;
-				(*topics)[hier] = mosquitto__calloc(tlen, sizeof(char));
+				(*topics)[hier] = calloc(tlen, sizeof(char));
 				if(!(*topics)[hier]){
 					for(j=0; j<hier; j++){
-						mosquitto__free((*topics)[j]);
+						free((*topics)[j]);
 					}
-					mosquitto__free((*topics));
+					free((*topics));
 					return MOSQ_ERR_NOMEM;
 				}
 				for(j=start; j<stop; j++){
@@ -630,9 +630,9 @@ int mosquitto_sub_topic_tokens_free(char ***topics, int count)
 	if(!topics || !(*topics) || count<1) return MOSQ_ERR_INVAL;
 
 	for(i=0; i<count; i++){
-		mosquitto__free((*topics)[i]);
+		free((*topics)[i]);
 	}
-	mosquitto__free(*topics);
+	free(*topics);
 
 	return MOSQ_ERR_SUCCESS;
 }

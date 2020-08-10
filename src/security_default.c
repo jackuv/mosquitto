@@ -162,7 +162,7 @@ int add__acl(struct mosquitto__security_options *security_opts, const char *user
 
 	if(!security_opts || !topic) return MOSQ_ERR_INVAL;
 
-	local_topic = mosquitto__strdup(topic);
+	local_topic = strdup(topic);
 	if(!local_topic){
 		return MOSQ_ERR_NOMEM;
 	}
@@ -183,17 +183,17 @@ int add__acl(struct mosquitto__security_options *security_opts, const char *user
 		}
 	}
 	if(!acl_user){
-		acl_user = mosquitto__malloc(sizeof(struct mosquitto__acl_user));
+		acl_user = malloc(sizeof(struct mosquitto__acl_user));
 		if(!acl_user){
-			mosquitto__free(local_topic);
+			free(local_topic);
 			return MOSQ_ERR_NOMEM;
 		}
 		new_user = true;
 		if(user){
-			acl_user->username = mosquitto__strdup(user);
+			acl_user->username = strdup(user);
 			if(!acl_user->username){
-				mosquitto__free(local_topic);
-				mosquitto__free(acl_user);
+				free(local_topic);
+				free(acl_user);
 				return MOSQ_ERR_NOMEM;
 			}
 		}else{
@@ -203,11 +203,11 @@ int add__acl(struct mosquitto__security_options *security_opts, const char *user
 		acl_user->acl = NULL;
 	}
 
-	acl = mosquitto__malloc(sizeof(struct mosquitto__acl));
+	acl = malloc(sizeof(struct mosquitto__acl));
 	if(!acl){
-		mosquitto__free(local_topic);
-		mosquitto__free(acl_user->username);
-		mosquitto__free(acl_user);
+		free(local_topic);
+		free(acl_user->username);
+		free(acl_user);
 		return MOSQ_ERR_NOMEM;
 	}
 	acl->access = access;
@@ -251,14 +251,14 @@ int add__acl_pattern(struct mosquitto__security_options *security_opts, const ch
 
 	if(!security_opts| !topic) return MOSQ_ERR_INVAL;
 
-	local_topic = mosquitto__strdup(topic);
+	local_topic = strdup(topic);
 	if(!local_topic){
 		return MOSQ_ERR_NOMEM;
 	}
 
-	acl = mosquitto__malloc(sizeof(struct mosquitto__acl));
+	acl = malloc(sizeof(struct mosquitto__acl));
 	if(!acl){
-		mosquitto__free(local_topic);
+		free(local_topic);
 		return MOSQ_ERR_NOMEM;
 	}
 	acl->access = access;
@@ -395,7 +395,7 @@ int mosquitto_acl_check_default(struct mosquitto_db *db, struct mosquitto *conte
 			ulen = 0;
 			len = tlen + acl_root->ccount*(clen-2);
 		}
-		local_acl = mosquitto__malloc(len+1);
+		local_acl = malloc(len+1);
 		if(!local_acl) return 1; /* FIXME */
 		s = local_acl;
 		for(i=0; i<tlen; i++){
@@ -418,7 +418,7 @@ int mosquitto_acl_check_default(struct mosquitto_db *db, struct mosquitto *conte
 		local_acl[len] = '\0';
 
 		mosquitto_topic_matches_sub(local_acl, topic, &result);
-		mosquitto__free(local_acl);
+		free(local_acl);
 		if(result){
 			if(access & acl_root->access){
 				/* And access is allowed. */
@@ -452,7 +452,7 @@ static int aclfile__parse(struct mosquitto_db *db, struct mosquitto__security_op
 	if(!security_opts) return MOSQ_ERR_INVAL;
 	if(!security_opts->acl_file) return MOSQ_ERR_SUCCESS;
 
-	buf = mosquitto__malloc(buflen);
+	buf = malloc(buflen);
 	if(buf == NULL){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 		return 1;
@@ -460,7 +460,7 @@ static int aclfile__parse(struct mosquitto_db *db, struct mosquitto__security_op
 
 	aclfptr = mosquitto__fopen(security_opts->acl_file, "rt", false);
 	if(!aclfptr){
-		mosquitto__free(buf);
+		free(buf);
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to open acl_file \"%s\".", security_opts->acl_file);
 		return 1;
 	}
@@ -539,8 +539,8 @@ static int aclfile__parse(struct mosquitto_db *db, struct mosquitto__security_op
 						rc = MOSQ_ERR_INVAL;
 						break;
 					}
-					mosquitto__free(user);
-					user = mosquitto__strdup(token);
+					free(user);
+					user = strdup(token);
 					if(!user){
 						rc = MOSQ_ERR_NOMEM;
 						break;
@@ -558,8 +558,8 @@ static int aclfile__parse(struct mosquitto_db *db, struct mosquitto__security_op
 		}
 	}
 
-	mosquitto__free(buf);
-	mosquitto__free(user);
+	free(buf);
+	free(user);
 	fclose(aclfptr);
 
 	return rc;
@@ -572,8 +572,8 @@ static void free__acl(struct mosquitto__acl *acl)
 	if(acl->next){
 		free__acl(acl->next);
 	}
-	mosquitto__free(acl->topic);
-	mosquitto__free(acl);
+	free(acl->topic);
+	free(acl);
 }
 
 
@@ -585,8 +585,8 @@ static void acl__cleanup_single(struct mosquitto__security_options *security_opt
 		user_tail = security_opts->acl_list->next;
 
 		free__acl(security_opts->acl_list->acl);
-		mosquitto__free(security_opts->acl_list->username);
-		mosquitto__free(security_opts->acl_list);
+		free(security_opts->acl_list->username);
+		free(security_opts->acl_list);
 
 		security_opts->acl_list = user_tail;
 	}
@@ -724,7 +724,7 @@ static int pwfile__parse(const char *file, struct mosquitto__unpwd **root)
 	char *buf;
 	int buflen = 256;
 
-	buf = mosquitto__malloc(buflen);
+	buf = malloc(buflen);
 	if(buf == NULL){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 		return 1;
@@ -733,7 +733,7 @@ static int pwfile__parse(const char *file, struct mosquitto__unpwd **root)
 	pwfile = mosquitto__fopen(file, "rt", false);
 	if(!pwfile){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Unable to open pwfile \"%s\".", file);
-		mosquitto__free(buf);
+		free(buf);
 		return 1;
 	}
 
@@ -744,23 +744,23 @@ static int pwfile__parse(const char *file, struct mosquitto__unpwd **root)
 
 			username = strtok_r(buf, ":", &saveptr);
 			if(username){
-				unpwd = mosquitto__calloc(1, sizeof(struct mosquitto__unpwd));
+				unpwd = calloc(1, sizeof(struct mosquitto__unpwd));
 				if(!unpwd){
 					fclose(pwfile);
-					mosquitto__free(buf);
+					free(buf);
 					return MOSQ_ERR_NOMEM;
 				}
 				username = misc__trimblanks(username);
 				if(strlen(username) > 65535){
 					log__printf(NULL, MOSQ_LOG_NOTICE, "Warning: Invalid line in password file '%s', username too long.", file);
-					mosquitto__free(unpwd);
+					free(unpwd);
 					continue;
 				}
 
-				unpwd->username = mosquitto__strdup(username);
+				unpwd->username = strdup(username);
 				if(!unpwd->username){
-					mosquitto__free(unpwd);
-					mosquitto__free(buf);
+					free(unpwd);
+					free(buf);
 					fclose(pwfile);
 					return MOSQ_ERR_NOMEM;
 				}
@@ -770,31 +770,31 @@ static int pwfile__parse(const char *file, struct mosquitto__unpwd **root)
 
 					if(strlen(password) > 65535){
 						log__printf(NULL, MOSQ_LOG_NOTICE, "Warning: Invalid line in password file '%s', password too long.", file);
-						mosquitto__free(unpwd->username);
-						mosquitto__free(unpwd);
+						free(unpwd->username);
+						free(unpwd);
 						continue;
 					}
 
-					unpwd->password = mosquitto__strdup(password);
+					unpwd->password = strdup(password);
 					if(!unpwd->password){
 						fclose(pwfile);
-						mosquitto__free(unpwd->username);
-						mosquitto__free(unpwd);
-						mosquitto__free(buf);
+						free(unpwd->username);
+						free(unpwd);
+						free(buf);
 						return MOSQ_ERR_NOMEM;
 					}
 
 					HASH_ADD_KEYPTR(hh, *root, unpwd->username, strlen(unpwd->username), unpwd);
 				}else{
 					log__printf(NULL, MOSQ_LOG_NOTICE, "Warning: Invalid line in password file '%s': %s", file, buf);
-					mosquitto__free(unpwd->username);
-					mosquitto__free(unpwd);
+					free(unpwd->username);
+					free(unpwd);
 				}
 			}
 		}
 	}
 	fclose(pwfile);
-	mosquitto__free(buf);
+	free(buf);
 
 	return MOSQ_ERR_SUCCESS;
 }
@@ -804,11 +804,11 @@ static int pwfile__parse(const char *file, struct mosquitto__unpwd **root)
 
 static void unpwd__free_item(struct mosquitto__unpwd **unpwd, struct mosquitto__unpwd *item)
 {
-	mosquitto__free(item->username);
-	mosquitto__free(item->password);
-	mosquitto__free(item->salt);
+	free(item->username);
+	free(item->password);
+	free(item->salt);
 	HASH_DEL(*unpwd, item);
-	mosquitto__free(item);
+	free(item);
 }
 
 
@@ -837,7 +837,7 @@ static int unpwd__decode_passwords(struct mosquitto__unpwd **unpwd)
 						if(token){
 							rc = base64__decode(token, &password, &password_len);
 							if(rc == MOSQ_ERR_SUCCESS && password_len == 64){
-								mosquitto__free(u->password);
+								free(u->password);
 								u->password = (char *)password;
 								u->password_len = password_len;
 							}else{
@@ -1004,12 +1004,12 @@ static int unpwd__cleanup(struct mosquitto__unpwd **root, bool reload)
 
 	HASH_ITER(hh, *root, u, tmp){
 		HASH_DEL(*root, u);
-		mosquitto__free(u->password);
-		mosquitto__free(u->username);
+		free(u->password);
+		free(u->username);
 #ifdef WITH_TLS
-		mosquitto__free(u->salt);
+		free(u->salt);
 #endif
-		mosquitto__free(u);
+		free(u);
 	}
 
 	*root = NULL;
@@ -1116,9 +1116,9 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 #endif /* FINAL_WITH_TLS_PSK */
 			{
 				/* Free existing credentials and then recover them. */
-				mosquitto__free(context->username);
+				free(context->username);
 				context->username = NULL;
-				mosquitto__free(context->password);
+				free(context->password);
 				context->password = NULL;
 
 				client_cert = SSL_get_peer_certificate(context->ssl);
@@ -1151,9 +1151,9 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 							continue;
 						}
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-						context->username = mosquitto__strdup((char *) ASN1_STRING_data(name_asn1));
+						context->username = strdup((char *) ASN1_STRING_data(name_asn1));
 #else
-						context->username = mosquitto__strdup((char *) ASN1_STRING_get0_data(name_asn1));
+						context->username = strdup((char *) ASN1_STRING_get0_data(name_asn1));
 #endif
 						if(!context->username){
 							X509_free(client_cert);
@@ -1174,7 +1174,7 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 					X509_NAME_print_ex(subject_bio, X509_get_subject_name(client_cert), 0, XN_FLAG_RFC2253);
 					data_start = NULL;
 					name_length = BIO_get_mem_data(subject_bio, &data_start);
-					subject = mosquitto__malloc(sizeof(char)*name_length+1);
+					subject = malloc(sizeof(char)*name_length+1);
 					if(!subject){
 						BIO_free(subject_bio);
 						X509_free(client_cert);
@@ -1288,9 +1288,9 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 #endif /* FINAL_WITH_TLS_PSK */
 			{
 				/* Free existing credentials and then recover them. */
-				mosquitto__free(context->username);
+				free(context->username);
 				context->username = NULL;
-				mosquitto__free(context->password);
+				free(context->password);
 				context->password = NULL;
 
 				client_cert = SSL_get_peer_certificate(context->ssl);
@@ -1323,9 +1323,9 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 							continue;
 						}
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-						context->username = mosquitto__strdup((char *) ASN1_STRING_data(name_asn1));
+						context->username = strdup((char *) ASN1_STRING_data(name_asn1));
 #else
-						context->username = mosquitto__strdup((char *) ASN1_STRING_get0_data(name_asn1));
+						context->username = strdup((char *) ASN1_STRING_get0_data(name_asn1));
 #endif
 						if(!context->username){
 							X509_free(client_cert);
@@ -1346,7 +1346,7 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 					X509_NAME_print_ex(subject_bio, X509_get_subject_name(client_cert), 0, XN_FLAG_RFC2253);
 					data_start = NULL;
 					name_length = BIO_get_mem_data(subject_bio, &data_start);
-					subject = mosquitto__malloc(sizeof(char)*name_length+1);
+					subject = malloc(sizeof(char)*name_length+1);
 					if(!subject){
 						BIO_free(subject_bio);
 						X509_free(client_cert);
@@ -1460,9 +1460,9 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 #endif /* FINAL_WITH_TLS_PSK */
 			{
 				/* Free existing credentials and then recover them. */
-				mosquitto__free(context->username);
+				free(context->username);
 				context->username = NULL;
-				mosquitto__free(context->password);
+				free(context->password);
 				context->password = NULL;
 
 				client_cert = SSL_get_peer_certificate(context->ssl);
@@ -1495,9 +1495,9 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 							continue;
 						}
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-						context->username = mosquitto__strdup((char *) ASN1_STRING_data(name_asn1));
+						context->username = strdup((char *) ASN1_STRING_data(name_asn1));
 #else
-						context->username = mosquitto__strdup((char *) ASN1_STRING_get0_data(name_asn1));
+						context->username = strdup((char *) ASN1_STRING_get0_data(name_asn1));
 #endif
 						if(!context->username){
 							X509_free(client_cert);
@@ -1518,7 +1518,7 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 					X509_NAME_print_ex(subject_bio, X509_get_subject_name(client_cert), 0, XN_FLAG_RFC2253);
 					data_start = NULL;
 					name_length = BIO_get_mem_data(subject_bio, &data_start);
-					subject = mosquitto__malloc(sizeof(char)*name_length+1);
+					subject = malloc(sizeof(char)*name_length+1);
 					if(!subject){
 						BIO_free(subject_bio);
 						X509_free(client_cert);
@@ -1632,9 +1632,9 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 #endif /* FINAL_WITH_TLS_PSK */
 			{
 				/* Free existing credentials and then recover them. */
-				mosquitto__free(context->username);
+				free(context->username);
 				context->username = NULL;
-				mosquitto__free(context->password);
+				free(context->password);
 				context->password = NULL;
 
 				client_cert = SSL_get_peer_certificate(context->ssl);
@@ -1667,9 +1667,9 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 							continue;
 						}
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-						context->username = mosquitto__strdup((char *) ASN1_STRING_data(name_asn1));
+						context->username = strdup((char *) ASN1_STRING_data(name_asn1));
 #else
-						context->username = mosquitto__strdup((char *) ASN1_STRING_get0_data(name_asn1));
+						context->username = strdup((char *) ASN1_STRING_get0_data(name_asn1));
 #endif
 						if(!context->username){
 							X509_free(client_cert);
@@ -1690,7 +1690,7 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 					X509_NAME_print_ex(subject_bio, X509_get_subject_name(client_cert), 0, XN_FLAG_RFC2253);
 					data_start = NULL;
 					name_length = BIO_get_mem_data(subject_bio, &data_start);
-					subject = mosquitto__malloc(sizeof(char)*name_length+1);
+					subject = malloc(sizeof(char)*name_length+1);
 					if(!subject){
 						BIO_free(subject_bio);
 						X509_free(client_cert);
@@ -1804,9 +1804,9 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 #endif /* FINAL_WITH_TLS_PSK */
 			{
 				/* Free existing credentials and then recover them. */
-				mosquitto__free(context->username);
+				free(context->username);
 				context->username = NULL;
-				mosquitto__free(context->password);
+				free(context->password);
 				context->password = NULL;
 
 				client_cert = SSL_get_peer_certificate(context->ssl);
@@ -1839,9 +1839,9 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 							continue;
 						}
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-						context->username = mosquitto__strdup((char *) ASN1_STRING_data(name_asn1));
+						context->username = strdup((char *) ASN1_STRING_data(name_asn1));
 #else
-						context->username = mosquitto__strdup((char *) ASN1_STRING_get0_data(name_asn1));
+						context->username = strdup((char *) ASN1_STRING_get0_data(name_asn1));
 #endif
 						if(!context->username){
 							X509_free(client_cert);
@@ -1862,7 +1862,7 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 					X509_NAME_print_ex(subject_bio, X509_get_subject_name(client_cert), 0, XN_FLAG_RFC2253);
 					data_start = NULL;
 					name_length = BIO_get_mem_data(subject_bio, &data_start);
-					subject = mosquitto__malloc(sizeof(char)*name_length+1);
+					subject = malloc(sizeof(char)*name_length+1);
 					if(!subject){
 						BIO_free(subject_bio);
 						X509_free(client_cert);
@@ -1976,9 +1976,9 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 #endif /* FINAL_WITH_TLS_PSK */
 			{
 				/* Free existing credentials and then recover them. */
-				mosquitto__free(context->username);
+				free(context->username);
 				context->username = NULL;
-				mosquitto__free(context->password);
+				free(context->password);
 				context->password = NULL;
 
 				client_cert = SSL_get_peer_certificate(context->ssl);
@@ -2011,9 +2011,9 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 							continue;
 						}
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-						context->username = mosquitto__strdup((char *) ASN1_STRING_data(name_asn1));
+						context->username = strdup((char *) ASN1_STRING_data(name_asn1));
 #else
-						context->username = mosquitto__strdup((char *) ASN1_STRING_get0_data(name_asn1));
+						context->username = strdup((char *) ASN1_STRING_get0_data(name_asn1));
 #endif
 						if(!context->username){
 							X509_free(client_cert);
@@ -2034,7 +2034,7 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 					X509_NAME_print_ex(subject_bio, X509_get_subject_name(client_cert), 0, XN_FLAG_RFC2253);
 					data_start = NULL;
 					name_length = BIO_get_mem_data(subject_bio, &data_start);
-					subject = mosquitto__malloc(sizeof(char)*name_length+1);
+					subject = malloc(sizeof(char)*name_length+1);
 					if(!subject){
 						BIO_free(subject_bio);
 						X509_free(client_cert);
@@ -2148,9 +2148,9 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 #endif /* FINAL_WITH_TLS_PSK */
 			{
 				/* Free existing credentials and then recover them. */
-				mosquitto__free(context->username);
+				free(context->username);
 				context->username = NULL;
-				mosquitto__free(context->password);
+				free(context->password);
 				context->password = NULL;
 
 				client_cert = SSL_get_peer_certificate(context->ssl);
@@ -2183,9 +2183,9 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 							continue;
 						}
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-						context->username = mosquitto__strdup((char *) ASN1_STRING_data(name_asn1));
+						context->username = strdup((char *) ASN1_STRING_data(name_asn1));
 #else
-						context->username = mosquitto__strdup((char *) ASN1_STRING_get0_data(name_asn1));
+						context->username = strdup((char *) ASN1_STRING_get0_data(name_asn1));
 #endif
 						if(!context->username){
 							X509_free(client_cert);
@@ -2206,7 +2206,7 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 					X509_NAME_print_ex(subject_bio, X509_get_subject_name(client_cert), 0, XN_FLAG_RFC2253);
 					data_start = NULL;
 					name_length = BIO_get_mem_data(subject_bio, &data_start);
-					subject = mosquitto__malloc(sizeof(char)*name_length+1);
+					subject = malloc(sizeof(char)*name_length+1);
 					if(!subject){
 						BIO_free(subject_bio);
 						X509_free(client_cert);
@@ -2320,9 +2320,9 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 #endif /* FINAL_WITH_TLS_PSK */
 			{
 				/* Free existing credentials and then recover them. */
-				mosquitto__free(context->username);
+				free(context->username);
 				context->username = NULL;
-				mosquitto__free(context->password);
+				free(context->password);
 				context->password = NULL;
 
 				client_cert = SSL_get_peer_certificate(context->ssl);
@@ -2355,9 +2355,9 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 							continue;
 						}
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-						context->username = mosquitto__strdup((char *) ASN1_STRING_data(name_asn1));
+						context->username = strdup((char *) ASN1_STRING_data(name_asn1));
 #else
-						context->username = mosquitto__strdup((char *) ASN1_STRING_get0_data(name_asn1));
+						context->username = strdup((char *) ASN1_STRING_get0_data(name_asn1));
 #endif
 						if(!context->username){
 							X509_free(client_cert);
@@ -2378,7 +2378,7 @@ int mosquitto_security_apply_default(struct mosquitto_db *db)
 					X509_NAME_print_ex(subject_bio, X509_get_subject_name(client_cert), 0, XN_FLAG_RFC2253);
 					data_start = NULL;
 					name_length = BIO_get_mem_data(subject_bio, &data_start);
-					subject = mosquitto__malloc(sizeof(char)*name_length+1);
+					subject = malloc(sizeof(char)*name_length+1);
 					if(!subject){
 						BIO_free(subject_bio);
 						X509_free(client_cert);
@@ -2545,7 +2545,7 @@ int base64__decode(char *in, unsigned char **decoded, unsigned int *decoded_len)
 		BIO_free_all(b64);
 		return 1;
 	}
-	*decoded = mosquitto__calloc(slen, 1);
+	*decoded = calloc(slen, 1);
 	if(!(*decoded)){
 		BIO_free_all(b64);
 		return 1;
@@ -2554,7 +2554,7 @@ int base64__decode(char *in, unsigned char **decoded, unsigned int *decoded_len)
 	BIO_free_all(b64);
 
 	if(*decoded_len <= 0){
-		mosquitto__free(*decoded);
+		free(*decoded);
 		*decoded = NULL;
 		*decoded_len = 0;
 		return 1;

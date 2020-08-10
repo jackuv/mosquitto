@@ -375,7 +375,7 @@ static int persist__subs_retain_save(struct mosquitto_db *db, FILE *db_fptr, str
 	memset(&sub_chunk, 0, sizeof(struct P_sub));
 
 	slen = strlen(topic) + node->topic_len + 2;
-	thistopic = mosquitto__malloc(sizeof(char)*slen);
+	thistopic = malloc(sizeof(char)*slen);
 	if(!thistopic) return MOSQ_ERR_NOMEM;
 	if(level > 1 || strlen(topic)){
 		snprintf(thistopic, slen, "%s/%s", topic, node->topic);
@@ -396,7 +396,7 @@ static int persist__subs_retain_save(struct mosquitto_db *db, FILE *db_fptr, str
 
 			rc = persist__chunk_sub_write_v5(db_fptr, &sub_chunk);
 			if(rc){
-				mosquitto__free(thistopic);
+				free(thistopic);
 				return rc;
 			}
 		}
@@ -408,7 +408,7 @@ static int persist__subs_retain_save(struct mosquitto_db *db, FILE *db_fptr, str
 			retain_chunk.F.store_id = node->retained->db_id;
 			rc = persist__chunk_retain_write_v5(db_fptr, &retain_chunk);
 			if(rc){
-				mosquitto__free(thistopic);
+				free(thistopic);
 				return rc;
 			}
 		}
@@ -418,7 +418,7 @@ static int persist__subs_retain_save(struct mosquitto_db *db, FILE *db_fptr, str
 		persist__subs_retain_save(db, db_fptr, subhier, thistopic, level+1);
 	}
 			
-	mosquitto__free(thistopic);
+	free(thistopic);
 	return MOSQ_ERR_SUCCESS;
 }
 
@@ -452,7 +452,7 @@ int persist__backup(struct mosquitto_db *db, bool shutdown)
 	log__printf(NULL, MOSQ_LOG_INFO, "Saving in-memory database to %s.", db->config->persistence_filepath);
 
 	len = strlen(db->config->persistence_filepath)+5;
-	outfile = mosquitto__malloc(len+1);
+	outfile = malloc(len+1);
 	if(!outfile){
 		log__printf(NULL, MOSQ_LOG_INFO, "Error saving in-memory database, out of memory.");
 		return MOSQ_ERR_NOMEM;
@@ -554,11 +554,11 @@ int persist__backup(struct mosquitto_db *db, bool shutdown)
 	if(rename(outfile, db->config->persistence_filepath) != 0){
 		goto error;
 	}
-	mosquitto__free(outfile);
+	free(outfile);
 	outfile = NULL;
 	return rc;
 error:
-	mosquitto__free(outfile);
+	free(outfile);
 	err = strerror(errno);
 	log__printf(NULL, MOSQ_LOG_ERR, "Error: %s.", err);
 	if(db_fptr) fclose(db_fptr);

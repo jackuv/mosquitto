@@ -114,7 +114,7 @@ int mosquitto_publish_v5(struct mosquitto *mosq, int *mid, const char *topic, in
 			rc = mosquitto_property_copy_all(&properties_copy, outgoing_properties);
 			if(rc) return rc;
 		}
-		message = mosquitto__calloc(1, sizeof(struct mosquitto_message_all));
+		message = calloc(1, sizeof(struct mosquitto_message_all));
 		if(!message){
 			mosquitto_property_free_all(&properties_copy);
 			return MOSQ_ERR_NOMEM;
@@ -124,7 +124,7 @@ int mosquitto_publish_v5(struct mosquitto *mosq, int *mid, const char *topic, in
 		message->timestamp = mosquitto_time();
 		message->msg.mid = local_mid;
 		if(topic){
-			message->msg.topic = mosquitto__strdup(topic);
+			message->msg.topic = strdup(topic);
 			if(!message->msg.topic){
 				message__cleanup(&message);
 				mosquitto_property_free_all(&properties_copy);
@@ -133,7 +133,7 @@ int mosquitto_publish_v5(struct mosquitto *mosq, int *mid, const char *topic, in
 		}
 		if(payloadlen){
 			message->msg.payloadlen = payloadlen;
-			message->msg.payload = mosquitto__malloc(payloadlen*sizeof(uint8_t));
+			message->msg.payload = malloc(payloadlen*sizeof(uint8_t));
 			if(!message->msg.payload){
 				message__cleanup(&message);
 				mosquitto_property_free_all(&properties_copy);

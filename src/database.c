@@ -172,17 +172,17 @@ static void subhier_clean(struct mosquitto_db *db, struct mosquitto__subhier **s
 		leaf = peer->subs;
 		while(leaf){
 			nextleaf = leaf->next;
-			mosquitto__free(leaf);
+			free(leaf);
 			leaf = nextleaf;
 		}
 		if(peer->retained){
 			db__msg_store_ref_dec(db, &peer->retained);
 		}
 		subhier_clean(db, &peer->children);
-		mosquitto__free(peer->topic);
+		free(peer->topic);
 
 		HASH_DELETE(hh, *subhier, peer);
-		mosquitto__free(peer);
+		free(peer);
 	}
 }
 
@@ -226,18 +226,18 @@ void db__msg_store_remove(struct mosquitto_db *db, struct mosquitto_msg_store *s
 	db->msg_store_count--;
 	db->msg_store_bytes -= store->payloadlen;
 		
-	mosquitto__free(store->source_id);
-	mosquitto__free(store->source_username);
+	free(store->source_id);
+	free(store->source_username);
 	if(store->dest_ids){
 		for(i=0; i<store->dest_id_count; i++){
-			mosquitto__free(store->dest_ids[i]);
+			free(store->dest_ids[i]);
 		}
-		mosquitto__free(store->dest_ids);
+		free(store->dest_ids);
 	}
-	mosquitto__free(store->topic);
+	free(store->topic);
 	mosquitto_property_free_all(&store->properties);
 	UHPA_FREE_PAYLOAD(store);
-	mosquitto__free(store);
+	free(store);
 	vayo_mutex_unlock(&db->msg_inout_mutex);
 }
 
@@ -310,7 +310,7 @@ static void db__message_remove(struct mosquitto_db *db, struct mosquitto_msg_dat
 	}
 
 	mosquitto_property_free_all(&item->properties);
-	mosquitto__free(item);
+	free(item);
 	vayo_mutex_unlock(&db->msg_inout_mutex);
 }
 
@@ -488,7 +488,7 @@ int db__message_insert(struct mosquitto_db *db, struct mosquitto *context, uint1
 	}
 #endif
 
-	msg = mosquitto__malloc(sizeof(struct mosquitto_client_msg));
+	msg = malloc(sizeof(struct mosquitto_client_msg));
 	if(!msg) return MOSQ_ERR_NOMEM;
 	msg->prev = NULL;
 	msg->next = NULL;
@@ -528,11 +528,11 @@ int db__message_insert(struct mosquitto_db *db, struct mosquitto *context, uint1
 		 * multiple times for overlapping subscriptions, although this is only the
 		 * case for SUBSCRIPTION with multiple subs in so is a minor concern.
 		 */
-		dest_ids = mosquitto__realloc(stored->dest_ids, sizeof(char *)*(stored->dest_id_count+1));
+		dest_ids = realloc(stored->dest_ids, sizeof(char *)*(stored->dest_id_count+1));
 		if(dest_ids){
 			stored->dest_ids = dest_ids;
 			stored->dest_id_count++;
-			stored->dest_ids[stored->dest_id_count-1] = mosquitto__strdup(context->id);
+			stored->dest_ids[stored->dest_id_count-1] = strdup(context->id);
 			if(!stored->dest_ids[stored->dest_id_count-1]){
 				return MOSQ_ERR_NOMEM;
 			}
@@ -590,7 +590,7 @@ void db__messages_delete_list(struct mosquitto_db *db, struct mosquitto_client_m
 		DL_DELETE(*head, tail);
 		db__msg_store_ref_dec(db, &tail->store);
 		mosquitto_property_free_all(&tail->properties);
-		mosquitto__free(tail);
+		free(tail);
 	}
 	*head = NULL;
 }
@@ -633,7 +633,7 @@ int db__messages_easy_queue(struct mosquitto_db *db, struct mosquitto *context, 
 	payload_uhpa.ptr = NULL;
 
 	if(!topic) return MOSQ_ERR_INVAL;
-	topic_heap = mosquitto__strdup(topic);
+	topic_heap = strdup(topic);
 	if(!topic_heap) return MOSQ_ERR_INVAL;
 
 	if(db->config->retain_available == false){
@@ -641,7 +641,7 @@ int db__messages_easy_queue(struct mosquitto_db *db, struct mosquitto *context, 
 	}
 
 	if(UHPA_ALLOC(payload_uhpa, payloadlen) == 0){
-		mosquitto__free(topic_heap);
+		free(topic_heap);
 		return MOSQ_ERR_NOMEM;
 	}
 	memcpy(UHPA_ACCESS(payload_uhpa, payloadlen), payload, payloadlen);
@@ -678,7 +678,7 @@ int db__message_store(struct mosquitto_db *db, const struct mosquitto *source, u
 	assert(db);
 	assert(stored);
 
-	temp = mosquitto__calloc(1, sizeof(struct mosquitto_msg_store));
+	temp = calloc(1, sizeof(struct mosquitto_msg_store));
 	if(!temp){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 		rc = MOSQ_ERR_NOMEM;
@@ -690,9 +690,9 @@ int db__message_store(struct mosquitto_db *db, const struct mosquitto *source, u
 
 	temp->ref_count = 0;
 	if(source && source->id){
-		temp->source_id = mosquitto__strdup(source->id);
+		temp->source_id = strdup(source->id);
 	}else{
-		temp->source_id = mosquitto__strdup("");
+		temp->source_id = strdup("");
 	}
 	if(!temp->source_id){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
@@ -701,7 +701,7 @@ int db__message_store(struct mosquitto_db *db, const struct mosquitto *source, u
 	}
 
 	if(source && source->username){
-		temp->source_username = mosquitto__strdup(source->username);
+		temp->source_username = strdup(source->username);
 		if(!temp->source_username){
 			rc = MOSQ_ERR_NOMEM;
 			goto error;
@@ -745,12 +745,12 @@ int db__message_store(struct mosquitto_db *db, const struct mosquitto *source, u
 	db__msg_store_add(db, temp);
 	return MOSQ_ERR_SUCCESS;
 error:
-	mosquitto__free(topic);
+	free(topic);
 	if(temp){
-		mosquitto__free(temp->source_id);
-		mosquitto__free(temp->source_username);
-		mosquitto__free(temp->topic);
-		mosquitto__free(temp);
+		free(temp->source_id);
+		free(temp->source_username);
+		free(temp->topic);
+		free(temp);
 	}
 	mosquitto_property_free_all(&properties);
 	UHPA_FREE(*payload, payloadlen);

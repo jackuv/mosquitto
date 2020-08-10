@@ -46,7 +46,7 @@ static int mosquitto__connect_init(struct mosquitto *mosq, const char *host, int
 	if(keepalive < 5) return MOSQ_ERR_INVAL;
 
 	if(mosq->id == NULL && (mosq->protocol == mosq_p_mqtt31 || mosq->protocol == mosq_p_mqtt311)){
-		mosq->id = (char *)mosquitto__calloc(24, sizeof(char));
+		mosq->id = (char *)calloc(24, sizeof(char));
 		if(!mosq->id){
 			return MOSQ_ERR_NOMEM;
 		}
@@ -64,14 +64,14 @@ static int mosquitto__connect_init(struct mosquitto *mosq, const char *host, int
 		}
 	}
 
-	mosquitto__free(mosq->host);
-	mosq->host = mosquitto__strdup(host);
+	free(mosq->host);
+	mosq->host = strdup(host);
 	if(!mosq->host) return MOSQ_ERR_NOMEM;
 	mosq->port = port;
 
-	mosquitto__free(mosq->bind_address);
+	free(mosq->bind_address);
 	if(bind_address){
-		mosq->bind_address = mosquitto__strdup(bind_address);
+		mosq->bind_address = strdup(bind_address);
 		if(!mosq->bind_address) return MOSQ_ERR_NOMEM;
 	}
 

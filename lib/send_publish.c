@@ -81,13 +81,13 @@ int send__publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint3
 					return rc;
 				}
 				if(match){
-					mapped_topic = mosquitto__strdup(topic);
+					mapped_topic = strdup(topic);
 					if(!mapped_topic) return MOSQ_ERR_NOMEM;
 					if(cur_topic->local_prefix){
 						/* This prefix needs removing. */
 						if(!strncmp(cur_topic->local_prefix, mapped_topic, strlen(cur_topic->local_prefix))){
-							topic_temp = mosquitto__strdup(mapped_topic+strlen(cur_topic->local_prefix));
-							mosquitto__free(mapped_topic);
+							topic_temp = strdup(mapped_topic+strlen(cur_topic->local_prefix));
+							free(mapped_topic);
 							if(!topic_temp){
 								return MOSQ_ERR_NOMEM;
 							}
@@ -98,20 +98,20 @@ int send__publish(struct mosquitto *mosq, uint16_t mid, const char *topic, uint3
 					if(cur_topic->remote_prefix){
 						/* This prefix needs adding. */
 						len = strlen(mapped_topic) + strlen(cur_topic->remote_prefix)+1;
-						topic_temp = mosquitto__malloc(len+1);
+						topic_temp = malloc(len+1);
 						if(!topic_temp){
-							mosquitto__free(mapped_topic);
+							free(mapped_topic);
 							return MOSQ_ERR_NOMEM;
 						}
 						snprintf(topic_temp, len, "%s%s", cur_topic->remote_prefix, mapped_topic);
 						topic_temp[len] = '\0';
-						mosquitto__free(mapped_topic);
+						free(mapped_topic);
 						mapped_topic = topic_temp;
 					}
 					log__printf(NULL, MOSQ_LOG_DEBUG, "Sending PUBLISH to %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", mosq->id, dup, qos, retain, mid, mapped_topic, (long)payloadlen);
 					G_PUB_BYTES_SENT_INC(payloadlen);
 					rc =  send__real_publish(mosq, mid, mapped_topic, payloadlen, payload, qos, retain, dup, cmsg_props, store_props, expiry_interval);
-					mosquitto__free(mapped_topic);
+					free(mapped_topic);
 					return rc;
 				}
 			}
@@ -188,14 +188,14 @@ int send__real_publish(struct mosquitto *mosq, uint16_t mid, const char *orgTopi
 		log__printf(NULL, MOSQ_LOG_NOTICE, "Dropping too large outgoing PUBLISH (%d bytes)", packetlen);
 #endif
 		if(need_free)
-			mosquitto__free(topic);
+			free(topic);
 		return MOSQ_ERR_OVERSIZE_PACKET;
 	}
 
-	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
+	packet = calloc(1, sizeof(struct mosquitto__packet));
 	if (!packet) {
 		if (need_free)
-			mosquitto__free(topic);
+			free(topic);
 		return MOSQ_ERR_NOMEM;
 	}
 	
@@ -204,9 +204,9 @@ int send__real_publish(struct mosquitto *mosq, uint16_t mid, const char *orgTopi
 	packet->remaining_length = packetlen;
 	rc = packet__alloc(packet);
 	if(rc){
-		mosquitto__free(packet);
+		free(packet);
 		if (need_free)
-			mosquitto__free(topic);
+			free(topic);
 		return rc;
 	}
 	/* Variable header (topic string) */
@@ -220,7 +220,7 @@ int send__real_publish(struct mosquitto *mosq, uint16_t mid, const char *orgTopi
 	}
 
 	if (need_free)
-		mosquitto__free(topic);
+		free(topic);
 	
 	if(mosq->protocol == mosq_p_mqtt5){
 		packet__write_varint(packet, proplen);

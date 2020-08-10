@@ -45,7 +45,7 @@ void memory__set_limit(size_t lim)
 }
 #endif
 
-void *mosquitto__calloc(size_t nmemb, size_t size)
+void *mosquitto__callocA(size_t nmemb, size_t size)
 {
 	void *mem;
 #ifdef REAL_WITH_MEMORY_TRACKING
@@ -67,7 +67,7 @@ void *mosquitto__calloc(size_t nmemb, size_t size)
 	return mem;
 }
 
-void mosquitto__free(void *mem)
+void mosquitto__freeA(void *mem)
 {
 #ifdef REAL_WITH_MEMORY_TRACKING
 	if(!mem){
@@ -78,7 +78,7 @@ void mosquitto__free(void *mem)
 	free(mem);
 }
 
-void *mosquitto__malloc(size_t size)
+void *mosquitto__mallocA(size_t size)
 {
 	void *mem;
 
@@ -114,7 +114,7 @@ unsigned long mosquitto__max_memory_used(void)
 }
 #endif
 
-void *mosquitto__realloc(void *ptr, size_t size)
+void *mosquitto__reallocA(void *ptr, size_t size)
 {
 	void *mem;
 #ifdef REAL_WITH_MEMORY_TRACKING
@@ -139,7 +139,7 @@ void *mosquitto__realloc(void *ptr, size_t size)
 	return mem;
 }
 
-char *mosquitto__strdup(const char *s)
+char *mosquitto__strdupA(const char *s)
 {
 	char *str;
 #ifdef REAL_WITH_MEMORY_TRACKING
@@ -211,7 +211,7 @@ char *vayo__strndup(const char *s, size_t n) {
 
 char *vayo__topic_with_id(const char *topic, const char * id, int* len){
 	*len = strlen(topic) + strlen(id) + 1;
-	char* result = (char*)mosquitto__malloc(*len + 1);
+	char* result = (char*)malloc(*len + 1);
 	if (!result)
 		return NULL;
 	snprintf(result, *len + 1, "%s/%s", topic, id);

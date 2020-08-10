@@ -292,7 +292,7 @@ void accept_connections(LPVOID *lpParam)
 	int pollfd_index = 0;
 	int pollfd_max = 1;
 	int fdcount;
-	pollfds = mosquitto__malloc(sizeof(struct pollfd)*pollfd_max);
+	pollfds = malloc(sizeof(struct pollfd)*pollfd_max);
 	if(!pollfds){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 		return;
@@ -1764,7 +1764,7 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 	pollfd_max = sysconf(_SC_OPEN_MAX);
 #endif
 
-	pollfds = mosquitto__malloc(sizeof(struct pollfd)*pollfd_max);
+	pollfds = malloc(sizeof(struct pollfd)*pollfd_max);
 	if(!pollfds){
 		log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 		return MOSQ_ERR_NOMEM;
@@ -1900,7 +1900,7 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 								if(context->adns->ar_result){
 									freeaddrinfo(context->adns->ar_result);
 								}
-								mosquitto__free(context->adns);
+								free(context->adns);
 								context->adns = NULL;
 								context->bridge->restart_t = 0;
 							}
@@ -3155,7 +3155,7 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 	(void) close(db->epollfd);
 	db->epollfd = 0;
 #else
-	mosquitto__free(pollfds);
+	free(pollfds);
 #endif
 	return MOSQ_ERR_SUCCESS;
 	

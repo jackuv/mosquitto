@@ -85,7 +85,7 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 	while(context->in_packet.pos < context->in_packet.remaining_length){
 		sub = NULL;
 		if(packet__read_string(&context->in_packet, &sub, &slen)){
-			mosquitto__free(payload);
+			free(payload);
 			return 1;
 		}
 				
@@ -94,8 +94,8 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 				log__printf(NULL, MOSQ_LOG_INFO, 
 						"Empty subscription string from %s, disconnecting.",
 						context->address);
-				mosquitto__free(sub);
-				mosquitto__free(payload);
+				free(sub);
+				free(payload);
 				return 1;
 			}
 
@@ -103,15 +103,15 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 			if (db->config->vayo_end_segment && vayo__strend(sub, db->config->vayo_end_segment)) { // remove the marker from the topic
 				slen = strlen(sub) - strlen(db->config->vayo_end_segment);
 				tsub = vayo__strndup(sub, slen);
-				mosquitto__free(sub);
+				free(sub);
 				if (!tsub)
 					return MOSQ_ERR_NOMEM;
 				sub = tsub;
 			} else if (!vayo__strend(sub, "/#")) { // add client id at the end of the topic
 				tsub = vayo__topic_with_id(sub, context->id, &slen);
-				mosquitto__free(sub);
+				free(sub);
 				if (!tsub) {
-					mosquitto__free(payload);
+					free(payload);
 					return MOSQ_ERR_NOMEM;
 				}
 				sub = tsub;
@@ -122,14 +122,14 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 				log__printf(NULL, MOSQ_LOG_INFO,
 						"Invalid subscription string from %s, disconnecting.",
 						context->address);
-				mosquitto__free(sub);
-				mosquitto__free(payload);
+				free(sub);
+				free(payload);
 				return 1;
 			}
 
 			if(packet__read_byte(&context->in_packet, &subscription_options)){
-				mosquitto__free(sub);
-				mosquitto__free(payload);
+				free(sub);
+				free(payload);
 				return 1;
 			}
 			if(context->protocol == mosq_p_mqtt31 || context->protocol == mosq_p_mqtt311){
@@ -150,23 +150,23 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 				log__printf(NULL, MOSQ_LOG_INFO,
 						"Invalid QoS in subscription command from %s, disconnecting.",
 						context->address);
-				mosquitto__free(sub);
-				mosquitto__free(payload);
+				free(sub);
+				free(payload);
 				return 1;
 			}
 
 			if(context->listener && context->listener->mount_point){
 				len = strlen(context->listener->mount_point) + slen + 1;
-				sub_mount = mosquitto__malloc(len+1);
+				sub_mount = malloc(len+1);
 				if(!sub_mount){
-					mosquitto__free(sub);
-					mosquitto__free(payload);
+					free(sub);
+					free(payload);
 					return MOSQ_ERR_NOMEM;
 				}
 				snprintf(sub_mount, len, "%s%s", context->listener->mount_point, sub);
 				sub_mount[len] = '\0';
 
-				mosquitto__free(sub);
+				free(sub);
 				sub = sub_mount;
 			}
 			log__printf(NULL, MOSQ_LOG_DEBUG, "\t%s (QoS %d)", sub, qos);
@@ -180,7 +180,7 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 						qos = 0x80;
 						break;
 					default:
-						mosquitto__free(sub);
+						free(sub);
 						return rc2;
 				}
 			}
@@ -188,7 +188,7 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 			if(qos != 0x80){
 				rc2 = sub__add(db, context, sub, qos, subscription_identifier, subscription_options, &db->subs);
 				if(rc2 > 0){
-					mosquitto__free(sub);
+					free(sub);
 					return rc2;
 				}
 				if(context->protocol == mosq_p_mqtt311 || context->protocol == mosq_p_mqtt31){
@@ -205,15 +205,15 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 
 				log__printf(NULL, MOSQ_LOG_SUBSCRIBE, "%s %d %s", context->id, qos, sub);
 			}
-			mosquitto__free(sub);
+			free(sub);
 						
-			tmp_payload = mosquitto__realloc(payload, payloadlen + 1);
+			tmp_payload = realloc(payload, payloadlen + 1);
 			if(tmp_payload){
 				payload = tmp_payload;
 				payload[payloadlen] = qos;
 				payloadlen++;
 			}else{
-				mosquitto__free(payload);
+				free(payload);
 
 				return MOSQ_ERR_NOMEM;
 			}
@@ -227,7 +227,7 @@ int handle__subscribe(struct mosquitto_db *db, struct mosquitto *context)
 		}
 	}
 	if(send__suback(context, mid, payloadlen, payload)) rc = 1;
-	mosquitto__free(payload);
+	free(payload);
 
 #ifdef WITH_PERSISTENCE
 	db->persistence_changes++;

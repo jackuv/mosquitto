@@ -69,9 +69,9 @@ int packet__alloc(struct mosquitto__packet *packet)
 	if(packet->remaining_count == 5) return MOSQ_ERR_PAYLOAD_SIZE;
 	packet->packet_length = packet->remaining_length + 1 + packet->remaining_count;
 #ifdef WITH_WEBSOCKETS
-	packet->payload = mosquitto__malloc(sizeof(uint8_t)*packet->packet_length + LWS_SEND_BUFFER_PRE_PADDING + LWS_SEND_BUFFER_POST_PADDING);
+	packet->payload = malloc(sizeof(uint8_t)*packet->packet_length + LWS_SEND_BUFFER_PRE_PADDING + LWS_SEND_BUFFER_POST_PADDING);
 #else
-	packet->payload = mosquitto__malloc(sizeof(uint8_t)*packet->packet_length);
+	packet->payload = malloc(sizeof(uint8_t)*packet->packet_length);
 #endif
 	if(!packet->payload) return MOSQ_ERR_NOMEM;
 
@@ -93,7 +93,7 @@ void packet__cleanup(struct mosquitto__packet *packet)
 	packet->remaining_count = 0;
 	packet->remaining_mult = 1;
 	packet->remaining_length = 0;
-	mosquitto__free(packet->payload);
+	free(packet->payload);
 	packet->payload = NULL;
 	packet->to_process = 0;
 	packet->pos = 0;
@@ -121,7 +121,7 @@ void packet__cleanup_all(struct mosquitto *mosq)
 		}
 
 		packet__cleanup(packet);
-		mosquitto__free(packet);
+		free(packet);
 	}
 
 	packet__cleanup(&mosq->in_packet);
@@ -282,7 +282,7 @@ int packet__write(struct mosquitto *mosq)
 		}else if(((packet->command)&0xF0) == CMD_DISCONNECT){
 			do_client_disconnect(mosq, MOSQ_ERR_SUCCESS, NULL);
 			packet__cleanup(packet);
-			mosquitto__free(packet);
+			free(packet);
 			return MOSQ_ERR_SUCCESS;
 #endif
 		}
@@ -299,7 +299,7 @@ int packet__write(struct mosquitto *mosq)
 		mosquitto_mutex_unlock(&mosq->out_packet_mutex);
 
 		packet__cleanup(packet);
-		mosquitto__free(packet);
+		free(packet);
 
 		mosquitto_mutex_lock(&mosq->msgtime_mutex);
 		mosq->next_msg_out = mosquitto_time() + mosq->keepalive;
@@ -436,7 +436,7 @@ int packet__read(struct mosquitto *mosq)
 		// FIXME - client case for incoming message received from broker too large
 #endif
 		if(mosq->in_packet.remaining_length > 0){
-			mosq->in_packet.payload = mosquitto__malloc(mosq->in_packet.remaining_length*sizeof(uint8_t));
+			mosq->in_packet.payload = malloc(mosq->in_packet.remaining_length*sizeof(uint8_t));
 			if(!mosq->in_packet.payload){
 				return MOSQ_ERR_NOMEM;
 			}

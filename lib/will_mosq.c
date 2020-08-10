@@ -60,15 +60,15 @@ int will__set(struct mosquitto *mosq, const char *topic, int payloadlen, const v
 	}
 
 	if(mosq->will){
-		mosquitto__free(mosq->will->msg.topic);
-		mosquitto__free(mosq->will->msg.payload);
+		free(mosq->will->msg.topic);
+		free(mosq->will->msg.payload);
 		mosquitto_property_free_all(&mosq->will->properties);
-		mosquitto__free(mosq->will);
+		free(mosq->will);
 	}
 
-	mosq->will = mosquitto__calloc(1, sizeof(struct mosquitto_message_all));
+	mosq->will = calloc(1, sizeof(struct mosquitto_message_all));
 	if(!mosq->will) return MOSQ_ERR_NOMEM;
-	mosq->will->msg.topic = mosquitto__strdup(topic);
+	mosq->will->msg.topic = strdup(topic);
 	if(!mosq->will->msg.topic){
 		rc = MOSQ_ERR_NOMEM;
 		goto cleanup;
@@ -79,7 +79,7 @@ int will__set(struct mosquitto *mosq, const char *topic, int payloadlen, const v
 			rc = MOSQ_ERR_INVAL;
 			goto cleanup;
 		}
-		mosq->will->msg.payload = mosquitto__malloc(sizeof(char)*mosq->will->msg.payloadlen);
+		mosq->will->msg.payload = malloc(sizeof(char)*mosq->will->msg.payloadlen);
 		if(!mosq->will->msg.payload){
 			rc = MOSQ_ERR_NOMEM;
 			goto cleanup;
@@ -96,10 +96,10 @@ int will__set(struct mosquitto *mosq, const char *topic, int payloadlen, const v
 
 cleanup:
 	if(mosq->will){
-		mosquitto__free(mosq->will->msg.topic);
-		mosquitto__free(mosq->will->msg.payload);
+		free(mosq->will->msg.topic);
+		free(mosq->will->msg.payload);
 
-		mosquitto__free(mosq->will);
+		free(mosq->will);
 		mosq->will = NULL;
 	}
 
@@ -110,15 +110,15 @@ int will__clear(struct mosquitto *mosq)
 {
 	if(!mosq->will) return MOSQ_ERR_SUCCESS;
 
-	mosquitto__free(mosq->will->msg.topic);
+	free(mosq->will->msg.topic);
 	mosq->will->msg.topic = NULL;
 
-	mosquitto__free(mosq->will->msg.payload);
+	free(mosq->will->msg.payload);
 	mosq->will->msg.payload = NULL;
 
 	mosquitto_property_free_all(&mosq->will->properties);
 
-	mosquitto__free(mosq->will);
+	free(mosq->will);
 	mosq->will = NULL;
 
 	return MOSQ_ERR_SUCCESS;

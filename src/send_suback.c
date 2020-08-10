@@ -33,7 +33,7 @@ int send__suback(struct mosquitto *context, uint16_t mid, uint32_t payloadlen, c
 
 	log__printf(NULL, MOSQ_LOG_DEBUG, "Sending SUBACK to %s, t%d", context->id, context->threadIndex);
 
-	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
+	packet = calloc(1, sizeof(struct mosquitto__packet));
 	if(!packet) return MOSQ_ERR_NOMEM;
 
 	packet->command = CMD_SUBACK;
@@ -45,7 +45,7 @@ int send__suback(struct mosquitto *context, uint16_t mid, uint32_t payloadlen, c
 	}
 	rc = packet__alloc(packet);
 	if(rc){
-		mosquitto__free(packet);
+		free(packet);
 		return rc;
 	}
 	packet__write_uint16(packet, mid);

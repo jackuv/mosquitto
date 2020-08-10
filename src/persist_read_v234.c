@@ -88,7 +88,7 @@ int persist__chunk_client_read_v234(FILE *db_fptr, struct P_client *chunk, int d
 	return MOSQ_ERR_SUCCESS;
 error:
 	log__printf(NULL, MOSQ_LOG_ERR, "Error: %s.", strerror(errno));
-	mosquitto__free(chunk->client_id);
+	free(chunk->client_id);
 	return 1;
 }
 
@@ -122,7 +122,7 @@ int persist__chunk_client_msg_read_v234(FILE *db_fptr, struct P_client_msg *chun
 error:
 	err = strerror(errno);
 	log__printf(NULL, MOSQ_LOG_ERR, "Error: %s.", err);
-	mosquitto__free(chunk->client_id);
+	free(chunk->client_id);
 	return 1;
 }
 
@@ -143,7 +143,7 @@ int persist__chunk_msg_store_read_v234(FILE *db_fptr, struct P_msg_store *chunk,
 	if(db_version == 4){
 		rc = persist__read_string(db_fptr, &chunk->source.username);
 		if(rc){
-			mosquitto__free(chunk->source.id);
+			free(chunk->source.id);
 			return rc;
 		}
 		read_e(db_fptr, &i16temp, sizeof(uint16_t));
@@ -158,8 +158,8 @@ int persist__chunk_msg_store_read_v234(FILE *db_fptr, struct P_msg_store *chunk,
 
 	rc = persist__read_string(db_fptr, &chunk->topic);
 	if(rc){
-		mosquitto__free(chunk->source.id);
-		mosquitto__free(chunk->source.username);
+		free(chunk->source.id);
+		free(chunk->source.username);
 		return rc;
 	}
 
@@ -171,9 +171,9 @@ int persist__chunk_msg_store_read_v234(FILE *db_fptr, struct P_msg_store *chunk,
 
 	if(chunk->F.payloadlen){
 		if(UHPA_ALLOC(chunk->payload, chunk->F.payloadlen) == 0){
-			mosquitto__free(chunk->source.id);
-			mosquitto__free(chunk->source.username);
-			mosquitto__free(chunk->topic);
+			free(chunk->source.id);
+			free(chunk->source.username);
+			free(chunk->topic);
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 			return MOSQ_ERR_NOMEM;
 		}
@@ -184,8 +184,8 @@ int persist__chunk_msg_store_read_v234(FILE *db_fptr, struct P_msg_store *chunk,
 error:
 	err = strerror(errno);
 	log__printf(NULL, MOSQ_LOG_ERR, "Error: %s.", err);
-	mosquitto__free(chunk->source.id);
-	mosquitto__free(chunk->source.username);
+	free(chunk->source.id);
+	free(chunk->source.username);
 	return 1;
 }
 
@@ -218,7 +218,7 @@ int persist__chunk_sub_read_v234(FILE *db_fptr, struct P_sub *chunk)
 
 	rc = persist__read_string(db_fptr, &chunk->topic);
 	if(rc){
-		mosquitto__free(chunk->client_id);
+		free(chunk->client_id);
 		return rc;
 	}
 
@@ -228,8 +228,8 @@ int persist__chunk_sub_read_v234(FILE *db_fptr, struct P_sub *chunk)
 error:
 	err = strerror(errno);
 	log__printf(NULL, MOSQ_LOG_ERR, "Error: %s.", err);
-	mosquitto__free(chunk->client_id);
-	mosquitto__free(chunk->topic);
+	free(chunk->client_id);
+	free(chunk->topic);
 	return 1;
 }
 

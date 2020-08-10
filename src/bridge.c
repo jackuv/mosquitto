@@ -60,7 +60,7 @@ int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 	assert(db);
 	assert(bridge);
 
-	local_id = mosquitto__strdup(bridge->local_clientid);
+	local_id = strdup(bridge->local_clientid);
 
 	if(threadIndex == 0)
 	{
@@ -97,12 +97,12 @@ int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 			
 	if(new_context){
 		/* (possible from persistent db) */
-		mosquitto__free(local_id);
+		free(local_id);
 	}else{
 		/* id wasn't found, so generate a new context */
 		new_context = context__init(db, -1, threadIndex);
 		if(!new_context){
-			mosquitto__free(local_id);
+			free(local_id);
 			return MOSQ_ERR_NOMEM;
 		}
 		new_context->id = local_id;
@@ -168,7 +168,7 @@ int bridge__new(struct mosquitto_db *db, struct mosquitto__bridge *bridge)
 	bridge->try_private_accepted = true;
 	new_context->protocol = bridge->protocol_version;
 
-	bridges = mosquitto__realloc(db->bridges, (db->bridge_count+1)*sizeof(struct mosquitto *));
+	bridges = realloc(db->bridges, (db->bridge_count+1)*sizeof(struct mosquitto *));
 	if(bridges){
 		db->bridges = bridges;
 		db->bridge_count++;
@@ -253,7 +253,7 @@ int bridge__connect_step1(struct mosquitto_db *db, struct mosquitto *context)
 			}
 		}else{
 			notification_topic_len = strlen(context->bridge->remote_clientid)+strlen("$SYS/broker/connection//state");
-			notification_topic = mosquitto__malloc(sizeof(char)*(notification_topic_len+1));
+			notification_topic = malloc(sizeof(char)*(notification_topic_len+1));
 			if(!notification_topic) return MOSQ_ERR_NOMEM;
 
 			snprintf(notification_topic, notification_topic_len+1, "$SYS/broker/connection/%s/state", context->bridge->remote_clientid);
@@ -266,7 +266,7 @@ int bridge__connect_step1(struct mosquitto_db *db, struct mosquitto *context)
 
 			notification_payload = '0';
 			rc = will__set(context, notification_topic, 1, &notification_payload, 1, true, NULL);
-			mosquitto__free(notification_topic);
+			free(notification_topic);
 			if(rc != MOSQ_ERR_SUCCESS){
 				return rc;
 			}
@@ -433,7 +433,7 @@ int bridge__connect(struct mosquitto_db *db, struct mosquitto *context)
 			}
 		}else{
 			notification_topic_len = strlen(context->bridge->remote_clientid)+strlen("$SYS/broker/connection//state");
-			notification_topic = mosquitto__malloc(sizeof(char)*(notification_topic_len+1));
+			notification_topic = malloc(sizeof(char)*(notification_topic_len+1));
 			if(!notification_topic) return MOSQ_ERR_NOMEM;
 
 			snprintf(notification_topic, notification_topic_len+1, "$SYS/broker/connection/%s/state", context->bridge->remote_clientid);
@@ -447,7 +447,7 @@ int bridge__connect(struct mosquitto_db *db, struct mosquitto *context)
 			if (!context->bridge->notifications_local_only) {
 				notification_payload = '0';
 				rc = will__set(context, notification_topic, 1, &notification_payload, 1, true, NULL);
-				mosquitto__free(notification_topic);
+				free(notification_topic);
 				if(rc != MOSQ_ERR_SUCCESS){
 					return rc;
 				}
@@ -537,14 +537,14 @@ void bridge__packet_cleanup(struct mosquitto *context)
 
 	if(context->current_out_packet){
 		packet__cleanup(context->current_out_packet);
-		mosquitto__free(context->current_out_packet);
+		free(context->current_out_packet);
 		context->current_out_packet = NULL;
 	}
     while(context->out_packet){
 		packet__cleanup(context->out_packet);
 		packet = context->out_packet;
 		context->out_packet = context->out_packet->next;
-		mosquitto__free(packet);
+		free(packet);
 	}
 	context->out_packet = NULL;
 	context->out_packet_last = NULL;

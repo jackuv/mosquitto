@@ -76,24 +76,24 @@ int mosquitto_username_pw_set(struct mosquitto *mosq, const char *username, cons
 		}
 	}
 
-	mosquitto__free(mosq->username);
+	free(mosq->username);
 	mosq->username = NULL;
 
-	mosquitto__free(mosq->password);
+	free(mosq->password);
 	mosq->password = NULL;
 
 	if(username){
 		if(mosquitto_validate_utf8(username, strlen(username))){
 			return MOSQ_ERR_MALFORMED_UTF8;
 		}
-		mosq->username = mosquitto__strdup(username);
+		mosq->username = strdup(username);
 		if(!mosq->username) return MOSQ_ERR_NOMEM;
 	}
 
 	if(password){
-		mosq->password = mosquitto__strdup(password);
+		mosq->password = strdup(password);
 		if(!mosq->password){
-			mosquitto__free(mosq->username);
+			free(mosq->username);
 			mosq->username = NULL;
 			return MOSQ_ERR_NOMEM;
 		}
@@ -124,7 +124,7 @@ int mosquitto_tls_set(struct mosquitto *mosq, const char *cafile, const char *ca
 
 	if(!mosq || (!cafile && !capath) || (certfile && !keyfile) || (!certfile && keyfile)) return MOSQ_ERR_INVAL;
 
-	mosquitto__free(mosq->tls_cafile);
+	free(mosq->tls_cafile);
 	mosq->tls_cafile = NULL;
 	if(cafile){
 		fptr = mosquitto__fopen(cafile, "rt", false);
@@ -133,60 +133,60 @@ int mosquitto_tls_set(struct mosquitto *mosq, const char *cafile, const char *ca
 		}else{
 			return MOSQ_ERR_INVAL;
 		}
-		mosq->tls_cafile = mosquitto__strdup(cafile);
+		mosq->tls_cafile = strdup(cafile);
 
 		if(!mosq->tls_cafile){
 			return MOSQ_ERR_NOMEM;
 		}
 	}
 
-	mosquitto__free(mosq->tls_capath);
+	free(mosq->tls_capath);
 	mosq->tls_capath = NULL;
 	if(capath){
-		mosq->tls_capath = mosquitto__strdup(capath);
+		mosq->tls_capath = strdup(capath);
 		if(!mosq->tls_capath){
 			return MOSQ_ERR_NOMEM;
 		}
 	}
 
-	mosquitto__free(mosq->tls_certfile);
+	free(mosq->tls_certfile);
 	mosq->tls_certfile = NULL;
 	if(certfile){
 		fptr = mosquitto__fopen(certfile, "rt", false);
 		if(fptr){
 			fclose(fptr);
 		}else{
-			mosquitto__free(mosq->tls_cafile);
+			free(mosq->tls_cafile);
 			mosq->tls_cafile = NULL;
 
-			mosquitto__free(mosq->tls_capath);
+			free(mosq->tls_capath);
 			mosq->tls_capath = NULL;
 			return MOSQ_ERR_INVAL;
 		}
-		mosq->tls_certfile = mosquitto__strdup(certfile);
+		mosq->tls_certfile = strdup(certfile);
 		if(!mosq->tls_certfile){
 			return MOSQ_ERR_NOMEM;
 		}
 	}
 
-	mosquitto__free(mosq->tls_keyfile);
+	free(mosq->tls_keyfile);
 	mosq->tls_keyfile = NULL;
 	if(keyfile){
 		fptr = mosquitto__fopen(keyfile, "rt", false);
 		if(fptr){
 			fclose(fptr);
 		}else{
-			mosquitto__free(mosq->tls_cafile);
+			free(mosq->tls_cafile);
 			mosq->tls_cafile = NULL;
 
-			mosquitto__free(mosq->tls_capath);
+			free(mosq->tls_capath);
 			mosq->tls_capath = NULL;
 
-			mosquitto__free(mosq->tls_certfile);
+			free(mosq->tls_certfile);
 			mosq->tls_certfile = NULL;
 			return MOSQ_ERR_INVAL;
 		}
-		mosq->tls_keyfile = mosquitto__strdup(keyfile);
+		mosq->tls_keyfile = strdup(keyfile);
 		if(!mosq->tls_keyfile){
 			return MOSQ_ERR_NOMEM;
 		}
@@ -214,17 +214,17 @@ int mosquitto_tls_opts_set(struct mosquitto *mosq, int cert_reqs, const char *tl
 				|| !strcasecmp(tls_version, "tlsv1.2")
 				|| !strcasecmp(tls_version, "tlsv1.1")){
 
-			mosq->tls_version = mosquitto__strdup(tls_version);
+			mosq->tls_version = strdup(tls_version);
 			if(!mosq->tls_version) return MOSQ_ERR_NOMEM;
 		}else{
 			return MOSQ_ERR_INVAL;
 		}
 	}else{
-		mosq->tls_version = mosquitto__strdup("tlsv1.2");
+		mosq->tls_version = strdup("tlsv1.2");
 		if(!mosq->tls_version) return MOSQ_ERR_NOMEM;
 	}
 	if(ciphers){
-		mosq->tls_ciphers = mosquitto__strdup(ciphers);
+		mosq->tls_ciphers = strdup(ciphers);
 		if(!mosq->tls_ciphers) return MOSQ_ERR_NOMEM;
 	}else{
 		mosq->tls_ciphers = NULL;
@@ -269,7 +269,7 @@ int mosquitto_string_option(struct mosquitto *mosq, enum mosq_opt_t option, cons
 				return MOSQ_ERR_INVAL;
 			}
 			ENGINE_free(eng); /* release the structural reference from ENGINE_by_id() */
-			mosq->tls_engine = mosquitto__strdup(value);
+			mosq->tls_engine = strdup(value);
 			if(!mosq->tls_engine){
 				return MOSQ_ERR_NOMEM;
 			}
@@ -311,7 +311,7 @@ int mosquitto_string_option(struct mosquitto *mosq, enum mosq_opt_t option, cons
 
 		case MOSQ_OPT_TLS_ALPN:
 #ifdef WITH_TLS
-			mosq->tls_alpn = mosquitto__strdup(value);
+			mosq->tls_alpn = strdup(value);
 			if(!mosq->tls_alpn){
 				return MOSQ_ERR_NOMEM;
 			}
@@ -336,16 +336,16 @@ int mosquitto_tls_psk_set(struct mosquitto *mosq, const char *psk, const char *i
 	if(strspn(psk, "0123456789abcdefABCDEF") < strlen(psk)){
 		return MOSQ_ERR_INVAL;
 	}
-	mosq->tls_psk = mosquitto__strdup(psk);
+	mosq->tls_psk = strdup(psk);
 	if(!mosq->tls_psk) return MOSQ_ERR_NOMEM;
 
-	mosq->tls_psk_identity = mosquitto__strdup(identity);
+	mosq->tls_psk_identity = strdup(identity);
 	if(!mosq->tls_psk_identity){
-		mosquitto__free(mosq->tls_psk);
+		free(mosq->tls_psk);
 		return MOSQ_ERR_NOMEM;
 	}
 	if(ciphers){
-		mosq->tls_ciphers = mosquitto__strdup(ciphers);
+		mosq->tls_ciphers = strdup(ciphers);
 		if(!mosq->tls_ciphers) return MOSQ_ERR_NOMEM;
 	}else{
 		mosq->tls_ciphers = NULL;

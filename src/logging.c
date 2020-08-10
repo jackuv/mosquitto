@@ -271,7 +271,7 @@ int log__vprintf(int priority, const char *fmt, va_list va)
 #endif
 		}
 		len = strlen(fmt) + 500;
-		s = mosquitto__malloc(len*sizeof(char));
+		s = malloc(len*sizeof(char));
 		if(!s) return MOSQ_ERR_NOMEM;
 
 		vsnprintf(s, len, fmt, va);
@@ -334,14 +334,14 @@ int log__vprintf(int priority, const char *fmt, va_list va)
 		if(log_destinations & MQTT3_LOG_TOPIC && priority != MOSQ_LOG_DEBUG && priority != MOSQ_LOG_INTERNAL){
 			if(log_timestamp){
 				len += 30;
-				st = mosquitto__malloc(len*sizeof(char));
+				st = malloc(len*sizeof(char));
 				if(!st){
-					mosquitto__free(s);
+					free(s);
 					return MOSQ_ERR_NOMEM;
 				}
 				snprintf(st, len, "%d: %s", (int)now, s);
 				db__messages_easy_queue(&int_db, NULL, topic, 2, strlen(st), st, 0, 20, NULL);
-				mosquitto__free(st);
+				free(st);
 			}else{
 				db__messages_easy_queue(&int_db, NULL, topic, 2, strlen(s), s, 0, 20, NULL);
 			}
@@ -351,7 +351,7 @@ int log__vprintf(int priority, const char *fmt, va_list va)
 			DLT_LOG_STRING(dltContext, get_dlt_level(priority), s);
 		}
 #endif
-		mosquitto__free(s);
+		free(s);
 	}
 
 	return MOSQ_ERR_SUCCESS;

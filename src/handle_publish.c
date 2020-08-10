@@ -95,17 +95,17 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	if(packet__read_string(&context->in_packet, &topic, &slen)) return 1;
 	if(!slen && context->protocol != mosq_p_mqtt5){
 		/* Invalid publish topic, disconnect client. */
-		mosquitto__free(topic);
+		free(topic);
 		return 1;
 	}
 
 	if(qos > 0){
 		if(packet__read_uint16(&context->in_packet, &mid)){
-			mosquitto__free(topic);
+			free(topic);
 			return 1;
 		}
 		if(mid == 0){
-			mosquitto__free(topic);
+			free(topic);
 			return MOSQ_ERR_PROTOCOL;
 		}
 	}
@@ -116,18 +116,18 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 		slen = strlen(topic) - strlen(db->config->vayo_end_segment);
 		tempTopic = vayo__strndup(topic, slen);
 		if (!tempTopic) {
-			mosquitto__free(topic);
+			free(topic);
 			return MOSQ_ERR_NOMEM;
 		}
-		mosquitto__free(topic);
+		free(topic);
 		topic = tempTopic;
 	} else {
 		tempTopic = vayo__topic_with_id(topic, context->id, &slen);
 		if (!tempTopic) {
-			mosquitto__free(topic);
+			free(topic);
 			return MOSQ_ERR_NOMEM;
 		}
-		mosquitto__free(topic);
+		free(topic);
 		topic = tempTopic;
 	}
 	/* Jack's patch */
@@ -192,28 +192,28 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	mosquitto_property_free_all(&properties);
 
 	if(topic_alias == 0 || (context->listener && topic_alias > context->listener->max_topic_alias)){
-		mosquitto__free(topic);
+		free(topic);
 		send__disconnect(context, MQTT_RC_TOPIC_ALIAS_INVALID, NULL);
 		return MOSQ_ERR_PROTOCOL;
 	}else if(topic_alias > 0){
 		if(topic){
 			rc = alias__add(context, topic, topic_alias);
 			if(rc){
-				mosquitto__free(topic);
+				free(topic);
 				return rc;
 			}
 		}else{
 			rc = alias__find(context, &topic, topic_alias);
 			if(rc){
 				send__disconnect(context, MQTT_RC_TOPIC_ALIAS_INVALID, NULL);
-				mosquitto__free(topic);
+				free(topic);
 				return rc;
 			}
 		}
 	}
 	if(mosquitto_validate_utf8(topic, slen) != MOSQ_ERR_SUCCESS){
 		log__printf(NULL, MOSQ_LOG_INFO, "Client %s sent topic with invalid UTF-8, disconnecting.", context->id);
-		mosquitto__free(topic);
+		free(topic);
 		return 1;
 	}
 
@@ -228,19 +228,19 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 
 				rc = mosquitto_topic_matches_sub(cur_topic->remote_topic, topic, &match);
 				if(rc){
-					mosquitto__free(topic);
+					free(topic);
 					return rc;
 				}
 				if(match){
 					if(cur_topic->remote_prefix){
 						/* This prefix needs removing. */
 						if(!strncmp(cur_topic->remote_prefix, topic, strlen(cur_topic->remote_prefix))){
-							topic_temp = mosquitto__strdup(topic+strlen(cur_topic->remote_prefix));
+							topic_temp = strdup(topic+strlen(cur_topic->remote_prefix));
 							if(!topic_temp){
-								mosquitto__free(topic);
+								free(topic);
 								return MOSQ_ERR_NOMEM;
 							}
-							mosquitto__free(topic);
+							free(topic);
 							topic = topic_temp;
 						}
 					}
@@ -248,15 +248,15 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 					if(cur_topic->local_prefix){
 						/* This prefix needs adding. */
 						len = strlen(topic) + strlen(cur_topic->local_prefix)+1;
-						topic_temp = mosquitto__malloc(len+1);
+						topic_temp = malloc(len+1);
 						if(!topic_temp){
-							mosquitto__free(topic);
+							free(topic);
 							return MOSQ_ERR_NOMEM;
 						}
 						snprintf(topic_temp, len, "%s%s", cur_topic->local_prefix, topic);
 						topic_temp[len] = '\0';
 
-						mosquitto__free(topic);
+						free(topic);
 						topic = topic_temp;
 					}
 					break;
@@ -267,7 +267,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 #endif
 	if(mosquitto_pub_topic_check(topic) != MOSQ_ERR_SUCCESS){
 		/* Invalid publish topic, just swallow it. */
-		mosquitto__free(topic);
+		free(topic);
 		return 1;
 	}
 
@@ -275,16 +275,16 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 	G_PUB_BYTES_RECEIVED_INC(payloadlen);
 	if(context->listener && context->listener->mount_point){
 		len = strlen(context->listener->mount_point) + strlen(topic) + 1;
-		topic_mount = mosquitto__malloc(len+1);
+		topic_mount = malloc(len+1);
 		if(!topic_mount){
-			mosquitto__free(topic);
+			free(topic);
 			mosquitto_property_free_all(&msg_properties);
 			return MOSQ_ERR_NOMEM;
 		}
 		snprintf(topic_mount, len, "%s%s", context->listener->mount_point, topic);
 		topic_mount[len] = '\0';
 
-		mosquitto__free(topic);
+		free(topic);
 		topic = topic_mount;
 	}
 
@@ -295,13 +295,13 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 			goto process_bad_message;
 		}
 		if(UHPA_ALLOC(payload, payloadlen) == 0){
-			mosquitto__free(topic);
+			free(topic);
 			mosquitto_property_free_all(&msg_properties);
 			return MOSQ_ERR_NOMEM;
 		}
 
 		if(packet__read_bytes(&context->in_packet, UHPA_ACCESS(payload, payloadlen), payloadlen)){
-			mosquitto__free(topic);
+			free(topic);
 			UHPA_FREE(payload, payloadlen);
 			mosquitto_property_free_all(&msg_properties);
 			return 1;
@@ -315,7 +315,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 			reason_code = MQTT_RC_NOT_AUTHORIZED;
 		goto process_bad_message;
 	}else if(rc != MOSQ_ERR_SUCCESS){
-		mosquitto__free(topic);
+		free(topic);
 		UHPA_FREE(payload, payloadlen);
 		mosquitto_property_free_all(&msg_properties);
 		return rc;
@@ -333,7 +333,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 		}
 		msg_properties = NULL; /* Now belongs to db__message_store() */
 	}else{
-		mosquitto__free(topic);
+		free(topic);
 		topic = stored->topic;
 		dup = 1;
 		mosquitto_property_free_all(&msg_properties);
@@ -374,7 +374,7 @@ int handle__publish(struct mosquitto_db *db, struct mosquitto *context)
 
 	return rc;
 process_bad_message:
-	mosquitto__free(topic);
+	free(topic);
 	UHPA_FREE(payload, payloadlen);
 	switch(qos){
 		case 0:

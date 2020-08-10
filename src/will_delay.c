@@ -38,7 +38,7 @@ int will_delay__add(struct mosquitto *context)
 {
 	struct will_delay_list *item;
 
-	item = mosquitto__calloc(1, sizeof(struct will_delay_list));
+	item = calloc(1, sizeof(struct will_delay_list));
 	if(!item) return MOSQ_ERR_NOMEM;
 
 	item->context = context;
@@ -61,7 +61,7 @@ void will_delay__send_all(struct mosquitto_db *db)
 		item->context->will_delay_interval = 0;
 		item->context->will_delay_entry = NULL;
 		context__send_will(db, item->context);
-		mosquitto__free(item);
+		free(item);
 	}
 	
 }
@@ -83,7 +83,7 @@ void will_delay__check(struct mosquitto_db *db, time_t now)
 			if(item->context->session_expiry_interval == 0){
 				context__add_to_disused(db, item->context);
 			}
-			mosquitto__free(item);
+			free(item);
 		}else{
 			return;
 		}
@@ -96,7 +96,7 @@ void will_delay__remove(struct mosquitto *mosq)
 {
 	if(mosq->will_delay_entry != NULL){
 		DL_DELETE(delay_list, mosq->will_delay_entry);
-		mosquitto__free(mosq->will_delay_entry);
+		free(mosq->will_delay_entry);
 		mosq->will_delay_entry = NULL;
 	}
 }

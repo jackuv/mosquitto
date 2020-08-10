@@ -283,29 +283,29 @@ static unsigned int psk_server_callback(SSL *ssl, const char *identity, unsigned
 
 	/* The hex to BN conversion results in the length halving, so we can pass
 	 * max_psk_len*2 as the max hex key here. */
-	psk_key = mosquitto__calloc(1, max_psk_len*2 + 1);
+	psk_key = calloc(1, max_psk_len*2 + 1);
 	if(!psk_key) return 0;
 
 	if(mosquitto_psk_key_get(db, context, psk_hint, identity, psk_key, max_psk_len*2) != MOSQ_ERR_SUCCESS){
-		mosquitto__free(psk_key);
+		free(psk_key);
 		return 0;
 	}
 
 	len = mosquitto__hex2bin(psk_key, psk, max_psk_len);
 	if (len < 0){
-		mosquitto__free(psk_key);
+		free(psk_key);
 		return 0;
 	}
 
 	if(listener->use_identity_as_username){
-		context->username = mosquitto__strdup(identity);
+		context->username = strdup(identity);
 		if(!context->username){
-			mosquitto__free(psk_key);
+			free(psk_key);
 			return 0;
 		}
 	}
 
-	mosquitto__free(psk_key);
+	free(psk_key);
 	return len;
 }
 #endif
@@ -640,7 +640,7 @@ int net__socket_listen(struct mosquitto__listener *listener)
 			continue;
 		}
 		listener->sock_count++;
-		listener->socks = mosquitto__realloc(listener->socks, sizeof(mosq_sock_t)*listener->sock_count);
+		listener->socks = realloc(listener->socks, sizeof(mosq_sock_t)*listener->sock_count);
 		if(!listener->socks){
 			log__printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
 			freeaddrinfo(ainfo);

@@ -92,7 +92,7 @@ int send__connect(struct mosquitto *mosq, uint16_t keepalive, bool clean_session
 		return MOSQ_ERR_INVAL;
 	}
 
-	packet = mosquitto__calloc(1, sizeof(struct mosquitto__packet));
+	packet = calloc(1, sizeof(struct mosquitto__packet));
 	if(!packet) return MOSQ_ERR_NOMEM;
 
 	if(clientid){
@@ -132,7 +132,7 @@ int send__connect(struct mosquitto *mosq, uint16_t keepalive, bool clean_session
 	packet->remaining_length = headerlen + payloadlen;
 	rc = packet__alloc(packet);
 	if(rc){
-		mosquitto__free(packet);
+		free(packet);
 		return rc;
 	}
 
