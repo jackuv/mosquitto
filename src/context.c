@@ -368,6 +368,7 @@ void context__free_disused(struct mosquitto_db *db, int threadIndex)
 void context__remove_from_by_id(struct mosquitto_db *db, struct mosquitto *context)
 {
 	if(context->removed_from_by_id == false && context->id){
+		vayo_mutex_lock(&db->delete_mutex);
 		db->threadClients[context->threadIndex]--;
 		switch (context->threadIndex)
 		{
@@ -395,8 +396,11 @@ void context__remove_from_by_id(struct mosquitto_db *db, struct mosquitto *conte
 			case 7:
 				HASH_DELETE(hh_id7, db->contexts_by_id7, context);
 				break;
+			default:
+				break;
 		}
 		context->removed_from_by_id = true;
+		vayo_mutex_unlock(&db->delete_mutex);
 	}
 }
 
