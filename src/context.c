@@ -13,6 +13,10 @@ and the Eclipse Distribution License is available at
 Contributors:
    Roger Light - initial implementation and documentation.
 */
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+
 
 #include "config.h"
 
@@ -295,6 +299,7 @@ void context__disconnect(struct mosquitto_db *db, struct mosquitto *context)
 	vayo_mutex_unlock(&db->delete_mutex);
 }
 
+int counter = 0;
 void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context)
 {
 	if(context->state == mosq_cs_disused) return;
@@ -310,10 +315,11 @@ void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context)
 	vayo_mutex_lock(&db->delete_mutex);
 	context->for_free_next = db->ll_for_free;
 	db->ll_for_free = context;
+	counter++;
 	vayo_mutex_unlock(&db->delete_mutex);
 }
 
-void context__free_disused(struct mosquitto_db *db, int threadIndex)
+void context__free_disusedOrg(struct mosquitto_db *db)
 {
 	struct mosquitto *context, *next;
 #ifdef WITH_WEBSOCKETS
@@ -321,9 +327,43 @@ void context__free_disused(struct mosquitto_db *db, int threadIndex)
 #endif
 	assert(db);
 
-	vayo_mutex_lock(&db->delete_mutex);
 	context = db->ll_for_free;
 	db->ll_for_free = NULL;
+	while(context){
+#ifdef WITH_WEBSOCKETS
+		if(context->wsi){
+			/* Don't delete yet, lws hasn't finished with it */
+			if(last){
+				last->for_free_next = context;
+			}else{
+				db->ll_for_free = context;
+			}
+			next = context->for_free_next;
+			context->for_free_next = NULL;
+			last = context;
+			context = next;
+		}else
+#endif
+		{
+			next = context->for_free_next;
+			context__cleanup(db, context, true);
+			context = next;
+		}
+	}
+}
+
+void context__free_disused(struct mosquitto_db *db, int threadIndex)
+{
+	struct mosquitto *context, *next, *prev;
+#ifdef WITH_WEBSOCKETS
+	struct mosquitto *last = NULL;
+#endif
+	assert(db);
+
+	vayo_mutex_lock(&db->delete_mutex);
+	context = db->ll_for_free;
+	prev = context;
+	// db->ll_for_free = NULL;
 
 	while(context){
 		#ifdef WITH_WEBSOCKETS
@@ -342,8 +382,23 @@ void context__free_disused(struct mosquitto_db *db, int threadIndex)
 #endif
 		{
 			next = context->for_free_next;
+			
 			if(context->threadIndex == threadIndex)
+			{
+				context->for_free_next = NULL;
+				prev->for_free_next = next;
+				if(context == db->ll_for_free)
+				{
+					prev = next;
+					db->ll_for_free = next;
+				}
+								
 				context__cleanup(db, context, true);
+				counter--;
+			} else
+			{
+				prev = context;
+			}
 			context = next;
 		}
 	}
@@ -380,6 +435,8 @@ void context__remove_from_by_id(struct mosquitto_db *db, struct mosquitto *conte
 				break;
 			case 7:
 				HASH_DELETE(hh_id7, db->contexts_by_id7, context);
+				break;
+			default:
 				break;
 		}
 		context->removed_from_by_id = true;

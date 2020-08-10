@@ -609,7 +609,7 @@ int main(int argc, char *argv[])
 	config__cleanup(int_db.config);
 	net__broker_cleanup();
 
-	char *p = malloc(sizeof(int));
+	// char *p = malloc(sizeof(int));
 
 	_CrtDumpMemoryLeaks();
 

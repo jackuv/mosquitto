@@ -14,6 +14,10 @@ Contributors:
    Roger Light - initial implementation and documentation.
    Tatsuzo Osawa - Add epoll.
 */
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+
 
 #include "config.h"
 
@@ -461,6 +465,7 @@ int mosquitto_main_loop_threaded(struct mosquitto_db *db, mosq_sock_t *listensoc
         }
     }
 
+	
 	return MOSQ_ERR_SUCCESS;
 }
 
