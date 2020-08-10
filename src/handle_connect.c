@@ -185,6 +185,7 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 	for(i = 0; i < MAX_THREADS; i++)
 	{
 		found_context = NULL;
+		vayo_mutex_lock(&db->delete_mutex);
 		switch (i)
 		{
 			case 0:
@@ -212,8 +213,10 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 				HASH_FIND(hh_id7, db->contexts_by_id7, context->id, strlen(context->id), found_context);
 				break;
 			default:
+			vayo_mutex_unlock(&db->delete_mutex);
 				return 1;
 		}
+		vayo_mutex_unlock(&db->delete_mutex);
 
 		if(found_context){
 			//enum mosquitto_client_state state = mosquitto__get_state(found_context);
