@@ -315,7 +315,7 @@ void context__add_to_disused(struct mosquitto_db *db, struct mosquitto *context)
 
 void context__free_disused(struct mosquitto_db *db, int threadIndex)
 {
-	struct mosquitto *context, *next;
+	struct mosquitto *context, *next, *prev;
 #ifdef WITH_WEBSOCKETS
 	struct mosquitto *last = NULL;
 #endif
@@ -323,7 +323,8 @@ void context__free_disused(struct mosquitto_db *db, int threadIndex)
 
 	vayo_mutex_lock(&db->delete_mutex);
 	context = db->ll_for_free;
-	db->ll_for_free = NULL;
+	prev = context;
+	// db->ll_for_free = NULL;
 
 	while(context){
 		#ifdef WITH_WEBSOCKETS
@@ -342,14 +343,27 @@ void context__free_disused(struct mosquitto_db *db, int threadIndex)
 #endif
 		{
 			next = context->for_free_next;
+			
 			if(context->threadIndex == threadIndex)
+			{
+				context->for_free_next = NULL;
+				prev->for_free_next = next;
+				if(context == db->ll_for_free)
+				{
+					prev = next;
+					db->ll_for_free = next;
+				}
+								
 				context__cleanup(db, context, true);
+			} else
+			{
+				prev = context;
+			}
 			context = next;
 		}
 	}
 	vayo_mutex_unlock(&db->delete_mutex);
 }
-
 
 void context__remove_from_by_id(struct mosquitto_db *db, struct mosquitto *context)
 {
