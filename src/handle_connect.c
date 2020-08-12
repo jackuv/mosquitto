@@ -176,12 +176,12 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 	uint8_t connect_ack = 0;
 	int i;
 	int rc;
-	
+
 	/* Find if this client already has an entry. This must be done *after* any security checks. */
 	for(i = 0; i < MAX_THREADS; i++)
 	{
 		found_context = NULL;
-		vayo_mutex_lock(&db->delete_mutex);
+		vayo_mutex_lock(&db->context_mutex[i]);
 		switch (i)
 		{
 			case 0:
@@ -209,11 +209,10 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 				HASH_FIND(hh_id7, db->contexts_by_id7, context->id, strlen(context->id), found_context);
 				break;
 			default:
-				vayo_mutex_unlock(&db->delete_mutex);
+				vayo_mutex_unlock(&db->context_mutex[i]);
 				return 1;
 		}
-		vayo_mutex_unlock(&db->delete_mutex);
-		
+				
 		if(found_context){
 			//enum mosquitto_client_state state = mosquitto__get_state(found_context);
 		
@@ -263,7 +262,8 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 					}
 				}
 			}
-
+			vayo_mutex_unlock(&db->context_mutex[i]);
+			
 			if(found_context->threadIndex != context->threadIndex) {
 				found_context->forceToDelete = 1;
 				if(context->clean_start == true){
@@ -283,7 +283,10 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 				do_disconnect(db, found_context, MOSQ_ERR_SUCCESS);	
 			}
 		}
+		else
+			vayo_mutex_unlock(&db->context_mutex[i]);
 	}
+
 	
 	rc = acl__find_acls(db, context);
 	if(rc){
