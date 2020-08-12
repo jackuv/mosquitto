@@ -327,6 +327,11 @@ int main(int argc, char *argv[])
 	{
 		int_db.threadClients[i] = 0;
 		// InitializeSRWLock(&int_db.hh_socket_rw_lock[i]);
+		if (vayo_mutex_init(&int_db.context_mutex[i])) 
+		{
+			log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create context_mutex: %d", i);
+			return 1;
+		}
 	}
 		
 	
@@ -597,8 +602,12 @@ int main(int argc, char *argv[])
 	vayo_mutex_destroy(&int_db.msg_inout_mutex);	
 	vayo_mutex_destroy(&int_db.socket_mutex);	
 	vayo_mutex_destroy(&int_db.sub_mutex);	
-	vayo_mutex_destroy(&int_db.delete_mutex);	
-
+	vayo_mutex_destroy(&int_db.delete_mutex);
+	
+	for(i=0;i<MAX_THREADS;i++)
+		vayo_mutex_destroy(&int_db.context_mutex[i]);
+	
+	
 	CloseHandle(int_db.read_mutex);
 		
 	if(config.pid_file){
@@ -609,7 +618,8 @@ int main(int argc, char *argv[])
 	config__cleanup(int_db.config);
 	net__broker_cleanup();
 
-	// char *p = malloc(sizeof(int));
+	/* test leak */
+	char *p = malloc(sizeof(int));
 
 	_CrtDumpMemoryLeaks();
 
