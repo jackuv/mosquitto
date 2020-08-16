@@ -212,9 +212,6 @@ int connect__on_authorised(struct mosquitto_db *db, struct mosquitto *context, v
 			case 7:
 				HASH_FIND(hh_id7, db->contexts_by_id7, context->id, strlen(context->id), found_context);
 				break;
-			default:
-				vayo_mutex_unlock(&db->context_mutex[i]);
-				return 1;
 		}
 				
 		if(found_context){
