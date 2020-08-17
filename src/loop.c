@@ -3164,5 +3164,5 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 #endif
 	return MOSQ_ERR_SUCCESS;
 	
-	}
+}
 
