@@ -498,6 +498,7 @@ struct mosquitto_db{
 	DWORD threadIds[MAX_THREADS];
 	int run;
 	int threadClients[MAX_THREADS];
+	time_t threadLastTime[MAX_THREADS];
 	// SRWLOCK hh_socket_rw_lock[MAX_THREADS];
 };
 

@@ -326,6 +326,7 @@ int main(int argc, char *argv[])
 	for(i=0;i<MAX_THREADS;i++)
 	{
 		int_db.threadClients[i] = 0;
+		int_db.threadLastTime[i] = 0;
 		// InitializeSRWLock(&int_db.hh_socket_rw_lock[i]);
 		if (vayo_mutex_init(&int_db.context_mutex[i])) 
 		{

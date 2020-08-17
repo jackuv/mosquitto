@@ -78,3 +78,12 @@ test/unit/out/
 
 www/cache/
 __pycache__
+/test/unit/files/persist_read/v6-cfg.test-db
+/test/unit/files/persist_read/v6-client-message-props.test-db
+/test/unit/files/persist_read/v6-client-message.test-db
+/test/unit/files/persist_read/v6-client.test-db
+/test/unit/files/persist_read/v6-message-store-props.test-db
+/test/unit/files/persist_read/v6-message-store.test-db
+/test/unit/files/persist_read/v6-retain.test-db
+/test/unit/files/persist_read/v6-sub.test-db
+/test/unit/files/persist_write/v6-message-store-no-ref.test-db

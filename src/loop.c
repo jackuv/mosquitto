@@ -1813,7 +1813,8 @@ DWORD WINAPI mosquitto_main_loop_thread(LPVOID *lpParam)
 
 	while(run){
 		context__free_disused(db, threadIndex);
-							
+		db->threadLastTime[threadIndex] = mosquitto_time();					
+
 #ifdef WITH_SYS_TREE
 		if(threadIndex == 0 && db->config->sys_interval > 0){
 			sys_tree__update(db, db->config->sys_interval, start_time);
