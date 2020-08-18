@@ -316,13 +316,6 @@ int main(int argc, char *argv[])
 		return 1;
     }
 	
-	
-	int_db.read_mutex = CreateMutex( NULL, FALSE, NULL);
-	if (int_db.read_mutex == NULL) 
-	{
-		log__printf(NULL, MOSQ_LOG_ERR, "Error: unable create read_mutex mutex");
-		return 1;
-	}
 	for(i=0;i<MAX_THREADS;i++)
 	{
 		int_db.threadClients[i] = 0;
@@ -608,8 +601,6 @@ int main(int argc, char *argv[])
 	for(i=0;i<MAX_THREADS;i++)
 		vayo_mutex_destroy(&int_db.context_mutex[i]);
 	
-	
-	CloseHandle(int_db.read_mutex);
 		
 	if(config.pid_file){
 		remove(config.pid_file);

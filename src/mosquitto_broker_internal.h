@@ -494,7 +494,6 @@ struct mosquitto_db{
 	vayo_mutex delete_mutex;
 	vayo_mutex context_mutex[MAX_THREADS];
 	
-	HANDLE read_mutex;
 	DWORD threadIds[MAX_THREADS];
 	int run;
 	int threadClients[MAX_THREADS];
