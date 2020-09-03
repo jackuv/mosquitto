@@ -610,7 +610,7 @@ int main(int argc, char *argv[])
 	config__cleanup(int_db.config);
 	net__broker_cleanup();
 
-	/* test leak */
+	/* test leak of the app */
 	char *p = malloc(sizeof(int));
 
 	_CrtDumpMemoryLeaks();
