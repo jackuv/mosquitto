@@ -1,4 +1,4 @@
-Eclipse Mosquitto, Multi-thread version
+Eclipse Mosquitto (Multithread Edition)
 =================
 
 This is a trying to add multithread possibilities.
