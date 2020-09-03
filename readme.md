@@ -1,4 +1,4 @@
-Eclipse Mosquitto
+Eclipse Mosquitto (Multithread edition)
 =================
 
 Mosquitto is an open source implementation of a server for version 5.0, 3.1.1,
